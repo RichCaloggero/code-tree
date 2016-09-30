@@ -43,7 +43,7 @@ options = $.extend (options, {$container: $container, name: name});
 options = $.extend (options, {$container: $container, name: name}, arguments[2]);
 } // if
 
-var activeDescendant_id = options.name + "activeDescendant";
+var activeDescendant_id = options.name + "-activeDescendant";
 //debug ("makeAccessible:", options);
 
 return addKeyboardNavigation (addAria (options.$container));
@@ -60,11 +60,11 @@ var $hasChildren, $li;
 $("a, button", $container).attr ("tabindex", "-1");
 //debug ("- implicit keyboard handling removed");
 
-// "ul" requires role="group"
+// "ul" gets role="group"
 $ul = $(options.ul, $container).addBack()
 .attr ("role", options.role_group);
 
-// "li" are tree nodes and require role="treeitem"
+// $li are tree nodes and get role="treeitem"
 $li = $(options.li, $ul)
 .attr ({role: options.role_item}); 
 
@@ -156,7 +156,10 @@ return $node.prev("[role=" + options.role_item + "]");
 } // previous
 
 function up ($node) {
-return $node.parent().closest("[role=" + options.role_item + "]").first();
+var $new = $node.parent()
+.closest("[role=" + options.role_item + "]")
+.first();
+return (isValidNode ($new))? $new : $node;
 } // up
 
 function down ($node) {
@@ -169,7 +172,10 @@ return $node && $node.length == 1 && $node.attr(options.state_expanded) == "true
 } // isOpened
 
 function open ($node) {
-if (!isOpened($node)) {
+if (
+$node.is ("[" + options.state_expanded + "]")
+&& !isOpened($node)
+) {
 $node.attr (options.state_expanded, "true");
 if (options.open && options.open instanceof Function) options.open ($node);
 } // if
@@ -240,6 +246,16 @@ return info;
 } // debugNode
 
 } // addKeyboardNavigation
+
+
+function updateCurrentNode ($container, $node) {
+$node.removeAttr ("id");
+$newNode.attr ({"id": activeDescendant_id});
+
+$container.removeAttr ("aria-activedescendant")
+.attr ("aria-activedescendant", activeDescendant_id);
+
+} // updateCurrentNode
 
 } // makeAccessible
 

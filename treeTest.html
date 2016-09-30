@@ -51,11 +51,6 @@ html = toHtml(parseTree);
 $folded.html (html);
 foldAll ($folded);
 
-$folded.find (".fold-trigger").attr ({
-//"role": "button",
-//"tabindex": "0",
-//"aria-expanded": "true"
-});
 
 // toggle fold status
 
@@ -127,16 +122,15 @@ $block.find (".content").addClass ("hidden");
 $block.find (".fold-marker").removeClass ("hidden");
 } // fold
 
-function toggleFold ($trigger) {
-var $block = $trigger.next(".block");
+function toggleFold ($block) {
 var $content = $(".content", $block).first();
-var $marker = $content.next();
+var $marker = $content.next(".fold-marker");
 
 //debug (`${$marker.length} ${$content.length}`);
 
 $marker.toggleClass ("hidden");
 $content.toggleClass ("hidden");
-$trigger.attr (
+$block.parent().find(".fold-trigger").attr (
 "aria-expanded", $content.hasClass("hidden")? "false" : "true"
 );
 //$(".editor .content").val ($folded.html());
