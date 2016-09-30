@@ -1,0 +1,135 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Test</title>
+
+<style>
+.fold-trigger, .block, .block .fold-marker, .block .content {display: inline;}
+.block .hidden {display: none;}
+#folded, #debug, .editor .content {white-space: pre;}
+</style>
+
+<script src="http://code.jquery.com/jquery.min.js"></script>
+<script src="esprima.js"></script>
+<script src="debug.js"></script>
+<script src="toHtml.js"></script>
+</head>
+<body>
+<h1>Test</h1>
+
+<div id="folded" role="region" aria-label="folded">
+</div>
+
+<div class="editor js">
+<button class="edit" aria-pressed="false">Edit</button>
+<textarea class="content" readonly="true" cols="80" rows="25">
+</textarea>
+</div>
+
+<div id="debug" role="region" aria-label="debug" aria-live="polite">
+</div>
+
+<script>
+jQuery.get ("t.txt", null, null, "text")
+.done (function (text) {
+var parseTree, html;
+var $folded = $("#folded");
+
+parseTree = esprima.parse (text);
+$(".editor .content").val (
+JSON.stringify(parseTree)
+.replace (/\:\[/g, ": [\n")
+.replace (/\:\{/g, ": {\n")
+.replace (/\],/g, "],\n")
+.replace (/\},/g, "},\n")
+);
+
+html = toHtml(parseTree);
+
+$folded.html (html);
+$folded.find (".fold-trigger").attr ({
+"role": "button",
+"tabindex": "0",
+"aria-expanded": "false"
+});
+
+
+
+// toggle fold status
+$folded.on ("click", ".fold-trigger", function (e) {
+toggleFold ($(e.target));
+e.stopPropagation ();
+e.stopImmediatePropagation ();
+e.preventDefault ();
+return false;
+
+}).on ("keydown", ".fold-trigger", function (e) {
+var key = e.keyCode;
+
+if (key === 13 || key === 32) {
+$(e.target).trigger ("click");
+return false;
+} // if
+
+return true;
+}); // click
+
+
+function toggleFold ($trigger) {
+var $block = $trigger.next(".block");
+var $content = $(".content", $block).first();
+var $marker = $content.next();
+
+//debug (`${$marker.length} ${$content.length}`);
+
+$marker.toggleClass ("hidden");
+$content.toggleClass ("hidden");
+$trigger.attr (
+"aria-expanded", $content.hasClass("hidden")? "false" : "true"
+);
+//$(".editor .content").val ($folded.html());
+return false;
+} // toggleFold
+
+
+}).fail (function (error) {
+alert (error);
+});
+
+
+$(".editor > .edit").on ("click", function (e) {
+var $edit = $(e.target);
+var state = $edit.attr("aria-pressed") === "true";
+var $editor = $edit.parent();
+if (! $editor || $editor.length === 0) return;
+
+if (state) {
+// turn it off
+disableEditor ($editor);
+$(this).attr ("aria-pressed", "false");
+
+} else {
+// turn it on
+enableEditor ($editor);
+$(this).attr ("aria-pressed", "true");
+} // if
+
+}).on ("keydown", "button,a", function (e) {
+$(e.target).trigger ("click");
+}); // click .edit
+
+function enableEditor ($editor) {
+$(".content", $editor).removeAttr ("readonly")
+.focus();
+} // enableEditor
+
+function disableEditor ($editor) {
+$(".content", $editor).attr ("readonly", "true");
+} // disableEditor
+
+
+</script>
+
+</body>
+</html>
