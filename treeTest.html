@@ -60,6 +60,9 @@ var key = e.key || e.which || e.keyCode;
 if (e.ctrlKey) {
 switch (key) {
 
+case "s": save ();
+return false;
+
 case "x": $savedNode = cut ( currentNode() );
 return false;
 
@@ -89,8 +92,13 @@ if ($from[0] === $to[0]) return;
 if ($to.prev(".item")[0] === $from[0]) return;
 $from = $from.remove ();
 $to.before ($from);
-debug ("paste ", $what[0].className, " to ", $where[0].className);
+debug ("paste ", $from[0].className, " before ", $to[0].className);
 } // paste
+
+function save () {
+var code = $("#codeTree :not(.fold-marker)").text ();
+$(".editor .content").val (code);
+} // save
 
 function currentNode () {
 return $("#codeTree").find ("#treeTest-activeDescendant");
@@ -100,13 +108,14 @@ function displayTree ($folded) {
 var parseTree, html;
 var text = $(".editor .content").val ();
 parseTree = esprima.parse (text);
-debug (
+/*debug (
 JSON.stringify(parseTree)
 .replace (/\:\[/g, ": [\n")
 .replace (/\:\{/g, ": {\n")
 .replace (/\],/g, "],\n")
 .replace (/\},/g, "},\n")
 ); // debug
+*/
 
 html = toHtml(parseTree);
 
@@ -124,12 +133,12 @@ ul: ".block",
 li: ".item",
 
 open : function ($node) {
-debug ("myOpen: " + $node[0].className);
+//debug ("myOpen: " + $node[0].className);
 unfold ($node.find(".block:first"));
 }, // open
 
 close : function ($node) {
-debug ("myClose: " + $node[0].className);
+//debug ("myClose: " + $node[0].className);
 fold ($node.find (".block:first"));
 }, // close
 
@@ -155,13 +164,13 @@ $blocks.find (".fold-marker").removeClass ("hidden");
 } // foldAll
 
 function unfold ($block) {
-debug ("unfolding... ");
+//debug ("unfolding... ");
 $block.find (".content").removeClass ("hidden");
 $block.find (".fold-marker").addClass ("hidden");
 } // unfold
 
 function fold ($block) {
-debug ("folding... ");
+//debug ("folding... ");
 $block.find (".content").addClass ("hidden");
 $block.find (".fold-marker").removeClass ("hidden");
 } // fold
