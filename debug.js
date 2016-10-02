@@ -1,5 +1,5 @@
 function debug () {
-return;
+//return;
 var text = $.map ($.makeArray (arguments), function (arg) {
 	var type = typeof(arg);
 	if (type === "array" || type == "object") return JSON.stringify(arg) + "\n";

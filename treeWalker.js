@@ -233,7 +233,7 @@ return ($node
 
 
 function debugNode ($node, label) {
-//return;
+return;
 var info = "(invalid)";
 
 if (isValidNode($node)) {
