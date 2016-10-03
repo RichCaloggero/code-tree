@@ -18,6 +18,8 @@
 </head>
 <body>
 <h1>Test</h1>
+<div id="status" aria-live="polite" role="region" aria-label="Status">
+</div>
 
 <div id="codeTree" role="region" aria-label="Code Tree">
 </div>
@@ -82,9 +84,8 @@ return true;
 }); // click
 
 function cut ($from) {
-debug ("cut from ", $from[0].className);
+status ("cut " + $from[0].className);
 return $from;
-
 } // cut
 
 function paste ($from, $to) {
@@ -92,12 +93,16 @@ if ($from[0] === $to[0]) return;
 if ($to.prev(".item")[0] === $from[0]) return;
 $from = $from.remove ();
 $to.before ($from);
-debug ("paste ", $from[0].className, " before ", $to[0].className);
+status ("paste " + $from[0].className + " before " + $to[0].className);
 } // paste
 
 function save () {
-var code = $("#codeTree :not(.fold-marker)").text ();
+var code = $("#codeTree").text();
+code = code.replace (/\n\n/g, "\n");
+
+
 $(".editor .content").val (code);
+status ("save complete");
 } // save
 
 function currentNode () {
@@ -120,6 +125,7 @@ JSON.stringify(parseTree)
 html = toHtml(parseTree);
 
 $folded.html (html);
+$folded.find(".fold-marker").remove();
 foldAll ($folded);
 
 
@@ -150,29 +156,24 @@ leaveNode : function ($node) {
 }); // makeAccessible
 
 
-
 function unfoldAll ($tree) {
-var $blocks = $tree.find (".fold-trigger .block");
-$blocks.find (".content").removeClass ("hidden");
-$blocks.find (".fold-marker").addClass ("hidden");
+$tree.find (".fold-trigger .block .content")
+.addClass("hidden");
 } // unfoldAll
 
 function foldAll ($tree) {
-var $blocks = $tree.find (".fold-trigger .block");
-$blocks.find (".content").addClass ("hidden");
-$blocks.find (".fold-marker").removeClass ("hidden");
+$tree.find (".fold-trigger .block .content")
+.addClass("hidden");
 } // foldAll
 
 function unfold ($block) {
 //debug ("unfolding... ");
 $block.find (".content").removeClass ("hidden");
-$block.find (".fold-marker").addClass ("hidden");
 } // unfold
 
 function fold ($block) {
 //debug ("folding... ");
 $block.find (".content").addClass ("hidden");
-$block.find (".fold-marker").removeClass ("hidden");
 } // fold
 
 function toggleFold ($block) {
@@ -223,6 +224,11 @@ $(".content", $editor).removeAttr ("readonly")
 function disableEditor ($editor) {
 $(".content", $editor).attr ("readonly", "true");
 } // disableEditor
+
+function status (message) {
+$("#status").html ("");
+$("#status").append (document.createTextNode (message));
+} // status
 
 
 </script>
