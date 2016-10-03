@@ -8,6 +8,10 @@ function output (_text) {
 text.append (_text);
 } // output
 
+if (! tree || !(tree instanceof Object)) {
+	alert (`argument 1 to toHtml must be a valid esprima AST - must be an object - ${typeof(tree)}`);
+	return "";
+} // if
 
 process (tree);
 return text.value();
@@ -31,9 +35,14 @@ if (options.separator && index < values.length-1) output (options.separator);
 } else {
 if (tree.type) {
 //debug (`type: ${tree.type}`);
-return typeMap[tree.type] (tree, options);
+try {
+	return typeMap[tree.type] (tree, options);
+} catch (e) {
+	alert (`unknown type: ${tree.type} / ${typeof(typeMap[tree.type])} / ${typeMap[tree.type] instanceof Function}`);
+} // try
+
 } else {
-alert (`missing type`);
+alert (`missing or unknown type: ${tree.type} - ${typeof(typeMap[tree.type])}`);
 throw new Error ("missing type");
 } // if
 } // if
