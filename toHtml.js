@@ -117,6 +117,27 @@ process (tree.arguments);
 output (")");
 }, // CallExpression
 
+MemberExpression: function (tree, options) {
+	process (tree.object, options);
+
+	if (tree.computed) {
+		output ("[");
+		process (tree.property);
+		output ("]");
+		
+	} else {
+		output (".");
+		process (tree.property, options);
+	} // if
+	
+}, // MemberExpression
+
+LogicalExpression: function (tree, options) {
+process (tree.left);
+output (tree.operator);
+process (tree.right);
+}, // LogicalExpression
+
 BlockStatement: function (tree, options) {
 output ('</div>');
 output ('<div class="block">');
@@ -175,9 +196,15 @@ output ('</div><!-- expression-statement -->\n');
 }, // ExpressionStatement
 
 BinaryExpression: function (tree) {
+if (tree.left.type !== "BinaryExpression" && tree.left.type !== "UnaryExpression") 
+output ("(");
+
 process (tree.left);
 output (tree.operator);
 process (tree.right);
+
+if (tree.right.type !== "BinaryExpression" && tree.right.type !== "UnaryExpression") 
+output (")");
 }, // BinaryExpression
 
 

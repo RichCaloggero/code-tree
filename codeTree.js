@@ -77,7 +77,10 @@ return $("#codeTree").find ("#treeTest-activeDescendant");
 function displayTree ($folded) {
 var parseTree, html;
 var text = $(".editor .content").val ();
-parseTree = esprima.parse (text);
+parseTree = esprima.parse (text, {
+	//loc: true,
+});
+$("#debug").html("");
 debug (
 JSON.stringify(parseTree)
 .replace (/\:\[/g, ": [\n")
