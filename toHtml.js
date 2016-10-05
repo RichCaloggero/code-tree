@@ -38,7 +38,7 @@ if (tree.type) {
 try {
 	return typeMap[tree.type] (tree, options);
 } catch (e) {
-	alert (`unknown type: ${tree.type} / ${typeof(typeMap[tree.type])} / ${typeMap[tree.type] instanceof Function}`);
+	debug (`unknown type: ${tree.type} / ${typeof(typeMap[tree.type])} / ${typeMap[tree.type] instanceof Function}`);
 } // try
 
 } else {
@@ -207,6 +207,25 @@ if (tree.right.type !== "BinaryExpression" && tree.right.type !== "UnaryExpressi
 output (")");
 }, // BinaryExpression
 
+UnaryExpression: function (tree, options) {
+output (tree.operator);
+process (tree.argument);
+}, // UnaryExpression
+
+TryStatement: function (tree, options) {
+output ("try ");
+process (tree.block);
+}, // TryStatement
+
+CatchClause: function (tree, options) {
+output ("catch ");
+
+output ("(");
+process (tree.param);
+output (")");
+
+process (tree.body);
+}, // CatchClause
 
 FunctionDeclaration: function (tree) {
 var name = "";
