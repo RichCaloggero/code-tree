@@ -10,7 +10,7 @@ text.append (_text);
 
 if (! tree || !(tree instanceof Object)) {
 	alert (`argument 1 to toHtml must be a valid esprima AST - must be an object - ${typeof(tree)}`);
-	return "";
+	return ("");
 } // if
 
 process (tree);
@@ -33,12 +33,12 @@ if (options.separator && index < values.length-1) output (options.separator);
 }); // forEach
 
 } else {
-if (tree.type) {
+if (tree.type && typeof(typeMap[tree.type]) === "function") {
 //debug (`type: ${tree.type}`);
 try {
 	return typeMap[tree.type] (tree, options);
 } catch (e) {
-	debug (`unknown type: ${tree.type} / ${typeof(typeMap[tree.type])} / ${typeMap[tree.type] instanceof Function}`);
+	alert(`can't execute: ${tree.type} / ${typeof(typeMap[tree.type])} / ${typeMap[tree.type] instanceof Function}`);
 } // try
 
 } else {
@@ -213,11 +213,17 @@ process (tree.argument);
 }, // UnaryExpression
 
 TryStatement: function (tree, options) {
+output ('<div class="item TryStatement">');
+
 output ("try ");
 process (tree.block);
+
+output ('</div><!-- TryStatement -->');
 }, // TryStatement
 
 CatchClause: function (tree, options) {
+output ('<div class="item CatchClause">');
+
 output ("catch ");
 
 output ("(");
@@ -225,7 +231,50 @@ process (tree.param);
 output (")");
 
 process (tree.body);
+
+output ('</div><!-- CatchClause -->\n');
 }, // CatchClause
+
+ThrowStatement: function (tree, options) {
+output ('<div class="item ThrowStatement">');
+
+output ("throw ");
+process (tree.argument);
+output (";\n");
+output ('</div><!-- ThrowStatement -->\n');
+}, // ThrowStatement
+
+ConditionalExpression: function (tree, options) {
+process (tree.test);
+
+output ("? ");
+process (tree.consequent);
+
+output (" : ");
+process (tree.alternate);
+}, // ConditionalExpression
+
+TemplateLiteral: function (tree, options) {
+if (tree.expressions.length === 0 && tree.quasis.length === 1) {
+output ('"');
+output (tree.quasis[0].value.raw);
+output ('"');
+return;
+} // if
+
+
+output ("`");
+process (tree.quasis);
+}, // TemplateLiteral
+
+TemplateElement: function (tree, options) {
+output (tree.value.raw);
+if (tree.tail) {
+output ("`");
+} else {
+output (" ");
+} // if
+}, // TemplateElement
 
 FunctionDeclaration: function (tree) {
 var name = "";
@@ -242,7 +291,7 @@ process (tree.body, {keyword: name});
 output ('</div><!-- function -->\n');
 }, // FunctionDeclaration
 
-ReturnStatement: function (tree) {
+ReturnStatement: function (tree, options) {
 output ('<div class="return item">\n');
 output ("return ");
 process (tree.argument);
@@ -255,15 +304,22 @@ return this.FunctionDeclaration (tree);
 }, // functionExpression
 
 ObjectExpression: function (tree, options) {
-output ('<div class="object-literal item">\n');
+output ('<div class="ObjectExpression item">\n');
 output ("{");
-if (tree.properties.length > 2) {
+/*if (tree.properties.length > 2) {
 options = Object.assign (options, {separator: ",\n"});
 output ("\n");
 } // if
+*/
 
-process (tree.properties, options);
-//if (tree.properties.length > 2) output ("\n");
+tree.properties.forEach (function (p) {
+output ('<div class="Property item">\n');
+process (p.key, options);
+output (": ");
+process (p.value, options);
+output ('</div><!-- property -->\n');
+}); // forEach
+
 output ("}");
 output ('</div><!-- object-literal -->\n');
 }, // ObjectExpression
@@ -300,7 +356,17 @@ return tree.name;
 Literal: function (tree) {
 output (tree.raw + " ");
 return tree.value;
-} // Literal
+}, // Literal
+
+NewExpression: function (tree, options) {
+output ("new ");
+process (tree.callee);
+}, // NewExpression
+
+ThisExpression: function (tree) {
+output ("this");
+} // ThisExpression
+
 }; // typeMap
 } // createTypeMap
 
