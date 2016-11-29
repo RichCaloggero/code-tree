@@ -1,3 +1,4 @@
+"use strict";
 $(document).ready (function () {
 var $savedNode = null;
 jQuery.get ("t.txt", null, null, "text")
@@ -101,6 +102,7 @@ foldAll ($folded);
 makeAccessible ({
 $container: $folded.find (".block:first"),
 name: "treeTest",
+flow: true,
 
 ul: ".block", 
 li: ".item",

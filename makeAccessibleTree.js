@@ -8,9 +8,10 @@
   Options:
 - root: root node,
 - open: called when a node is opened with node as argument;
-  - close: called when a node is closed, with node as an argument
-  - beforeOpen: called before open with node as an argument
-  
+  - close: called when a node is closed, with node as an argument, cancels close if it returns false
+  - beforeOpen: called before open with node as an argument, , cancels open if it returns false
+  - flow: next and prev keys to flow to children if they exist (depth first traversal)
+
 - ul: selects tree items (default "ul")
 - li: selects branches (default "li")
 
@@ -128,24 +129,34 @@ function navigate ($start, key) {
 if (! isValidNode($start)) return null;
 
 switch (key) {
-case 38: return previous ($start); // upArrow moves to previous sibling
-case 40: return next($start); // downArrow moves to next sibling
+case 38: return (options.flow && hasChildren($start))?
+down ($start) : previous ($start); // upArrow moves to previous sibling
+case 40: return (options.flow && hasChildren($start))?
+up ($start) : next($start); // upArrow moves to previous sibling
+
 
 // leftArrow moves up a level and closes
 case 37:
-if (options.beforeClose && options.beforeClose instanceof Function) options.beforeClose($start); 
+if (options.beforeClose && options.beforeClose instanceof Function && options.beforeClose()) {
 $start =  up($start);
 close ($start);
+} // if
 return $start;
 
 // rightArrow opens and moves down a level
-case 39: if (! isOpened($start)) open ($start);
+case 39: if (hasChildren ($start) && ! isOpened($start)
+ && options.beforeOpen && options.beforeOpen instanceof Function && options.beforeOpen ($start)) {
+open ($start);
 $start = down($start);
-if (options.afterOpen && options.afterOpen instanceof Function) options.afterOpen ($start);
+} // if
 return $start;
 
 default: return null;
 } // switch
+
+function hasChildren ($node) {
+return $node.is ("[aria-expanded]");
+} // hasChildren
 
 function next ($node) {
 return $node.next ("[role=" + options.role_item + "]");
