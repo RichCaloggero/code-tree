@@ -99,13 +99,13 @@ foldAll ($folded);
 
 // toggle fold status
 
-makeAccessible ({
+treeWalker ({
 $container: $folded.find (".block:first"),
 name: "treeTest",
 flow: true,
 
-ul: ".block", 
-li: ".item",
+group: ".block", 
+branch: ".item",
 
 open : function ($node) {
 //debug ("myOpen: " + $node[0].className);
@@ -115,12 +115,6 @@ unfold ($node.find(".block:first"));
 close : function ($node) {
 //debug ("myClose: " + $node[0].className);
 fold ($node.find (".block:first"));
-}, // close
-
-currentNode : function ($node) {
-}, // open
-
-leaveNode : function ($node) {
 }, // close
 }); // makeAccessible
 
