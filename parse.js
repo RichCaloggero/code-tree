@@ -10,7 +10,7 @@ y++;
 x += x / y * x+y;
 }
 `);
-result = parse(tokens);
+result = parse(tokens, generateText);
 
 console.log (`Processing ${tokens.length} tokens:\n`,
 //util.inspect (
@@ -19,10 +19,10 @@ result[0] == " ", result
 , "\nDone.\n"
 );
 
-function parse (tokens) {
+function parse (tokens, generate) {
 var index = 0;
 if (! tokens) return null;
-return transform (_parseBlocks (0, ""));
+return transform (_parseBlocks (0, ""), generate);
 
 function _parseBlocks (level, title) {
 var node = {
@@ -130,7 +130,7 @@ return _isToken (_token || token(), "Punctuator", ";");
 
 /// rewrite
 
-function transform (tree, type) {
+function transform (tree, generate) {
 var text = "";
 var index = 0;
 var token;
@@ -140,32 +140,33 @@ token = tree.body[index];
 //console.log ("- token: ", text.length, token);
 
 if (isBlock (token)) {
-outputBlock (token, type);
+outputBlock (token, generate);
 
 } else if (isStatementTerminator (token)) {
-endStatement (token, type);
+endStatement (token, generate);
 
 } else {
 //console.log ("- else: ", token);
-outputToken (token, lookahead(), type);
+outputToken (token, lookahead());
 
 } // if
 
 } // while
 return text;
 
-function outputBlock (block, type) {
+function outputBlock (block, generate) {
 //console.log ("outputBlock: ", util.inspect(block.title, {depth: null, breakLength: 3}));
 if (block.title && block.title.body.length > 0) {
 //console.log ("- trying title");
-output (transform (block.title, type));
+if (generate && isFunction(generate.blockTitleStart)) output (generate.blockTitleStart (block.title.text));
+output (transform (block.title, generate));
+if (generate && isFunction(generate.blockTitleEnd)) output (generate.blockTitleEnd ());
 } // if
 
-output ("{\n");
-output (transform (block, type));
-output ("}");
+if (generate && isFunction(generate.blockStart)) output (generate.blockStart());
+output (transform (block, generate));
+if (generate && isFunction(generate.blockEnd)) output (generate.blockEnd (block.title && block.title.text));
 
-if (block.title && block.title.text) output (" // " + block.title.text);
 output ("\n");
 } // outputBlock
 
@@ -174,7 +175,7 @@ output (_token.value);
 output ("\n");
 } // endStatement
 
-function outputToken (_token, _nextToken, type) {
+function outputToken (_token, _nextToken) {
 output (_token.value);
 if (_nextToken) {
 if (
@@ -272,8 +273,62 @@ function includes (v, a) {
 return (a instanceof Array) && a.indexOf(v) >= 0;
 } // includes
 
+function isFunction (x) {
+	return x && (x instanceof Function);
+} // isFunction
 } // parse
 
+
+// text output
+var generateText = {
+	blockStart: function () {
+		return "{\n";
+	}, // blockStart
+	blockEnd: function (title) {
+		var text = "}";
+		if (title) text += " // " + title;
+		return text;
+	} // blockEnd
+}; // generateText
+
+/// html output
+/* should look like this:
+<div class="block">
+<div class="block header">
+while (test())
+</div><!-- .block.header -->
+<div class="block content">
+<div class="folded">{...}</div>
+<div class="unfolded content">
+... program text (may include other block specifications) ...
+</div>
+</div></div>
+*/
+
+var generateHtml = {
+	blockTitleStart: function (text) {
+		return '<div class="block header">';
+	}, // blockTitleStart
+	
+		blockTitleEnd: function (text) {
+		return '</div><!-- .block.header -->';
+	}, // blockTitleEnd
+
+	blockStart: function () {
+return '<div class="block content">'
++ '<div class="folded">{...}</div>'
++ '<div class="unfolded">';
+	}, // blockStart
+	
+	blockEnd: function (title) {
+		var comment = "";
+		if (title) comment += " // " + title + "\n";
+		return comment
+		+ '</div><!-- .unfolded -->'
+		+ '</div><!-- .block.content -->'
+		+ '</div><!-- .block -->';
+	} // blockEnd
+}; // generateHtml
 
 
 
