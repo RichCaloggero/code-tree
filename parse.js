@@ -3,8 +3,12 @@ var util = require ("util");
 var es = require ("./esprima");
 var result;
 var tokens = es.tokenize (`
-var x;
-while (x) {done;}
+var x, y;
+while (x < (y+z)) {
+--x[7];
+y++;
+x += x / y * x+y;
+}
 `);
 result = parse(tokens);
 
@@ -133,7 +137,7 @@ var token;
 
 for (index=0; index<tree.body.length; index++) {
 token = tree.body[index];
-console.log ("- token: ", text.length, token);
+//console.log ("- token: ", text.length, token);
 
 if (isBlock (token)) {
 outputBlock (token, type);
@@ -172,24 +176,17 @@ output ("\n");
 
 function outputToken (_token, _nextToken, type) {
 output (_token.value);
-if (trailingSpace(_token, _nextToken)) output (" ");
-
-function trailingSpace (current, next) {
-//console.log ("trailingSpace: ", current, next);
-if (next) {
+if (_nextToken) {
 if (
-(_isToken(current, "Identifier")  || _isToken(current, "Keyword"))
-&& (_isToken(next, "Identifier")  || _isToken(next, "Keyword"))
-) return true;
-
-if (isStatementTerminator(next)) return false;
-if (_isToken(next, "Punctuator", "(")) return true;
+isStatementTerminator(_nextToken)
+|| _isToken(_token, "Identifier") && includes(_nextToken.value, ["++", "--"])
+|| _isToken(_nextToken, "Identifier") && includes(_token.value, ["++", "--"])
+|| includes(_nextToken.value, [")", "]"])
+|| includes(_token.value, ["(", "["])
+|| (_isToken (_token, "Identifier") && _isToken (_nextToken, "Punctuator", "["))
+) return;
 } // if
-
-if (_isToken(current, "Punctuator", "(")) return false;
-if (_isToken(current, "Punctuator")) return true;
-return false;
-} // trailingSpace
+output (" ");
 } // outputToken
 
 function lookahead () {
@@ -270,6 +267,11 @@ function isEndOfInput (_index) {
 if (arguments.length === 0) _index = index;
 return _index >= tokens.length;
 } // isEndOfInput
+
+function includes (v, a) {
+return (a instanceof Array) && a.indexOf(v) >= 0;
+} // includes
+
 } // parse
 
 
