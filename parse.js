@@ -10,6 +10,65 @@ y++;
 x += x / y * x+y;
 }
 `);
+
+/// text output
+var generateText = {
+	blockTitle: function (text) {
+		return text;
+	}, // blockTitle
+
+blockStart: function () {
+		return "{\n";
+	}, // blockStart
+	blockEnd: function (title) {
+		var text = "}";
+		if (title) text += " // " + title;
+		return text;
+	} // blockEnd
+}; // generateText
+
+/// html output
+/* should look like this:
+<div class="block">
+<div class="block header">
+while (test())
+</div><!-- .block.header -->
+<div class="block content">
+<div class="folded">{...}</div>
+<div class="unfolded content">
+... program text (may include other block specifications) ...
+</div>
+</div></div>
+*/
+
+var generateHtml = {
+	blockTitleStart: function (text) {
+		return '<div class="block header">';
+	}, // blockTitleStart
+	
+		blockTitleEnd: function (text) {
+		return '</div><!-- .block.header -->';
+	}, // blockTitleEnd
+
+	blockStart: function () {
+return '<div class="block content">'
++ '<div class="folded">{...}</div>'
++ '<div class="unfolded">';
+	}, // blockStart
+	
+	blockEnd: function (title) {
+		var comment = "";
+		if (title) comment += " // " + title + "\n";
+		return comment
+		+ '</div><!-- .unfolded -->'
+		+ '</div><!-- .block.content -->'
+		+ '</div><!-- .block -->';
+	} // blockEnd
+}; // generateHtml
+
+console.log ("global: ", generateText);
+
+
 result = parse(tokens, generateText);
 
 console.log (`Processing ${tokens.length} tokens:\n`,
@@ -22,6 +81,8 @@ result[0] == " ", result
 function parse (tokens, generate) {
 var index = 0;
 if (! tokens) return null;
+console.log ("parse: ", generate);
+
 return transform (_parseBlocks (0, ""), generate);
 
 function _parseBlocks (level, title) {
@@ -134,6 +195,7 @@ function transform (tree, generate) {
 var text = "";
 var index = 0;
 var token;
+console.log ("transform: ", generate);
 
 for (index=0; index<tree.body.length; index++) {
 token = tree.body[index];
@@ -155,12 +217,12 @@ outputToken (token, lookahead());
 return text;
 
 function outputBlock (block, generate) {
-//console.log ("outputBlock: ", util.inspect(block.title, {depth: null, breakLength: 3}));
+console.log ("outputBlock: ", util.inspect(block.title, {depth: null, breakLength: 3}));
 if (block.title && block.title.body.length > 0) {
-//console.log ("- trying title");
-if (generate && isFunction(generate.blockTitleStart)) output (generate.blockTitleStart (block.title.text));
-output (transform (block.title, generate));
-if (generate && isFunction(generate.blockTitleEnd)) output (generate.blockTitleEnd ());
+console.log ("- found title ", block.title.text);
+//if (generate && isFunction(generate.blockTitleStart)) output (generate.blockTitleStart (block.title.text));
+if (generate && isFunction(generate.blockTitle)) output (generate.blockTitle(transform (block.title, generate)));
+//if (generate && isFunction(generate.blockTitleEnd)) output (generate.blockTitleEnd ());
 } // if
 
 if (generate && isFunction(generate.blockStart)) output (generate.blockStart());
@@ -279,56 +341,6 @@ function isFunction (x) {
 } // parse
 
 
-// text output
-var generateText = {
-	blockStart: function () {
-		return "{\n";
-	}, // blockStart
-	blockEnd: function (title) {
-		var text = "}";
-		if (title) text += " // " + title;
-		return text;
-	} // blockEnd
-}; // generateText
-
-/// html output
-/* should look like this:
-<div class="block">
-<div class="block header">
-while (test())
-</div><!-- .block.header -->
-<div class="block content">
-<div class="folded">{...}</div>
-<div class="unfolded content">
-... program text (may include other block specifications) ...
-</div>
-</div></div>
-*/
-
-var generateHtml = {
-	blockTitleStart: function (text) {
-		return '<div class="block header">';
-	}, // blockTitleStart
-	
-		blockTitleEnd: function (text) {
-		return '</div><!-- .block.header -->';
-	}, // blockTitleEnd
-
-	blockStart: function () {
-return '<div class="block content">'
-+ '<div class="folded">{...}</div>'
-+ '<div class="unfolded">';
-	}, // blockStart
-	
-	blockEnd: function (title) {
-		var comment = "";
-		if (title) comment += " // " + title + "\n";
-		return comment
-		+ '</div><!-- .unfolded -->'
-		+ '</div><!-- .block.content -->'
-		+ '</div><!-- .block -->';
-	} // blockEnd
-}; // generateHtml
 
 
 
