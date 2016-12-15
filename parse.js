@@ -13,16 +13,16 @@ x += x / y * x+y;
 
 /// text output
 var generateText = {
-	blockTitle: function (text) {
+	blockLabel: function (text) {
 		return text;
-	}, // blockTitle
+	}, // blockLabel
 
 blockStart: function () {
 		return "{\n";
 	}, // blockStart
-	blockEnd: function (title) {
+	blockEnd: function (label) {
 		var text = "}";
-		if (title) text += " // " + title;
+		if (label) text += " // " + label;
 		return text;
 	} // blockEnd
 }; // generateText
@@ -42,13 +42,11 @@ while (test())
 */
 
 var generateHtml = {
-	blockTitleStart: function (text) {
-		return '<div class="block header">';
-	}, // blockTitleStart
-	
-		blockTitleEnd: function (text) {
-		return '</div><!-- .block.header -->';
-	}, // blockTitleEnd
+	blockLabel: function (text) {
+		return '<div class="block header">'
++ text
++ '</div><!-- .block.header -->';
+	}, // blockLabel
 
 	blockStart: function () {
 return '<div class="block content">'
@@ -56,9 +54,9 @@ return '<div class="block content">'
 + '<div class="unfolded">';
 	}, // blockStart
 	
-	blockEnd: function (title) {
+	blockEnd: function (label) {
 		var comment = "";
-		if (title) comment += " // " + title + "\n";
+		if (label) comment += " // " + label + "\n";
 		return comment
 		+ '</div><!-- .unfolded -->'
 		+ '</div><!-- .block.content -->'
@@ -85,10 +83,10 @@ console.log ("parse: ", generate);
 
 return transform (_parseBlocks (0, ""), generate);
 
-function _parseBlocks (level, title) {
+function _parseBlocks (level, label) {
 var node = {
 type: "Block",
-title: title,
+label: label,
 level: level,
 index: index,
 body: []
@@ -98,7 +96,7 @@ body: []
 
 while (! isEndOfInput() && !isBlockEnd()) {
 if (
-isBlockTitle ()
+isBlockLabel ()
 || isBlockStart ()
 ) {
 startBlock ();
@@ -117,22 +115,22 @@ node.body.push (x);
 } // output
 
 function startBlock () {
-var title;
-if (isBlockTitle()) {
-title = processBlockTitle ();
+var label;
+if (isBlockLabel()) {
+label = processBlockLabel ();
 //console.log ("- resulting tokens: ", node.body.length);
-if (! title) return;
+if (! label) return;
 } // if
 
 nextToken ();
-output (_parseBlocks(level+1, title));
+output (_parseBlocks(level+1, label));
 
-function processBlockTitle () {
+function processBlockLabel () {
 var _token = token();
 var text = token().value;
 var chunk = [];
 
-//console.log ("- looking for block title...");
+//console.log ("- looking for block label...");
 if (isToken ("Identifier", "function") && isLookahead("Identifier")) text += (" " + lookahead().value);
 //console.log ("- text: ", text);
 
@@ -143,8 +141,8 @@ nextToken ();
 //console.log ("- scan: ", chunk.length);
 
 if (isBlockStart()) {
-//console.log ("- found block title");
-return blockTitle (text, chunk);
+//console.log ("- found block label");
+return blockLabel (text, chunk);
 } // if
 
 //if (isStatementTerminator()) {
@@ -153,10 +151,10 @@ node.body = node.body.concat (chunk, token());
 //} // if
 return null;
 
-function blockTitle (text, tokens) {
+function blockLabel (text, tokens) {
 return {text: text, body: tokens};
-} // blockTitle
-} // processBlockTitle
+} // blockLabel
+} // processBlockLabel
 } // startBlock
 
 function endBlock () {
@@ -170,10 +168,10 @@ return node;
 
 /// qualifiers
 
-function isBlockTitle (_token) {
+function isBlockLabel (_token) {
 _token = _token || token();
 return _isToken (_token, "Keyword") || _isToken (_token, "Identifier", "function");
-} // isBlockTitle
+} // isBlockLabel
 
 function isBlockStart (_token) {
 return _isToken (_token || token(), "Punctuator", "{");
@@ -217,17 +215,17 @@ outputToken (token, lookahead());
 return text;
 
 function outputBlock (block, generate) {
-console.log ("outputBlock: ", util.inspect(block.title, {depth: null, breakLength: 3}));
-if (block.title && block.title.body.length > 0) {
-console.log ("- found title ", block.title.text);
-//if (generate && isFunction(generate.blockTitleStart)) output (generate.blockTitleStart (block.title.text));
-if (generate && isFunction(generate.blockTitle)) output (generate.blockTitle(transform (block.title, generate)));
-//if (generate && isFunction(generate.blockTitleEnd)) output (generate.blockTitleEnd ());
+console.log ("outputBlock: ", util.inspect(block.label, {depth: null, breakLength: 3}));
+if (block.label && block.label.body.length > 0) {
+console.log ("- found label", block.label.text);
+//if (generate && isFunction(generate.blockLabelStart)) output (generate.blockLabelStart (block.label.text));
+if (generate && isFunction(generate.blockLabel)) output (generate.blockLabel(transform (block.label, generate)));
+//if (generate && isFunction(generate.blockLabelEnd)) output (generate.blockLabelEnd ());
 } // if
 
 if (generate && isFunction(generate.blockStart)) output (generate.blockStart());
 output (transform (block, generate));
-if (generate && isFunction(generate.blockEnd)) output (generate.blockEnd (block.title && block.title.text));
+if (generate && isFunction(generate.blockEnd)) output (generate.blockEnd (block.label && block.label.text));
 
 output ("\n");
 } // outputBlock
