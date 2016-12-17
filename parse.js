@@ -13,7 +13,11 @@ x += x / y * x+y;
 
 /// text output
 var generateText = {
-	blockLabel: function (text) {
+	statementEnd: function () {
+		return ";";
+	}, // statementEnd
+
+blockLabel: function (text) {
 		return text;
 	}, // blockLabel
 
@@ -42,6 +46,23 @@ while (test())
 */
 
 var generateHtml = {
+	nodeStart: function () {
+		return '<div class="node">';
+	}, // nodeStart
+
+
+	nodeEnd: function () {
+		return '</div><!-- .node -->';
+	}, // nodeStart
+
+	statementStart: function () {
+		return '<div class="statement">';
+	}, // statementStart
+
+	statementEnd: function () {
+		return '</div><!-- .statement -->';
+	}, // statementStart
+
 	blockLabel: function (text) {
 		return '<div class="block header">'
 + text
@@ -64,10 +85,9 @@ return '<div class="block content">'
 	} // blockEnd
 }; // generateHtml
 
-console.log ("global: ", generateText);
 
 
-result = parse(tokens, generateText);
+result = parse(tokens, generateHtml);
 
 console.log (`Processing ${tokens.length} tokens:\n`,
 //util.inspect (
@@ -78,8 +98,8 @@ result[0] == " ", result
 
 function parse (tokens, generate) {
 var index = 0;
+if (! generate) throw new Error ("need generator");
 if (! tokens) return null;
-console.log ("parse: ", generate);
 
 return transform (_parseBlocks (0, ""), generate);
 
@@ -193,46 +213,62 @@ function transform (tree, generate) {
 var text = "";
 var index = 0;
 var token;
-console.log ("transform: ", generate);
+if (isFunction (generate.nodeStart)) output(generate.nodeStart());
+output(do(generate.nodeStart()));
+output(do(generate.statementStart()));
+if (tree.label && isFunction(generate.blockLabel)) output(generate.blockLabel(outputBlockLabel(tree.label)));
 
 for (index=0; index<tree.body.length; index++) {
 token = tree.body[index];
 //console.log ("- token: ", text.length, token);
 
+/*if (statementStart) {
+output(do(generate.statementStart()));
+statementStart = false;
+} // if
+*/
+
 if (isBlock (token)) {
-outputBlock (token, generate);
+output (transform (token, generate));
+//statementStart = true;
 
 } else if (isStatementTerminator (token)) {
 endStatement (token, generate);
+//statementStart = true;
 
 } else {
-//console.log ("- else: ", token);
 outputToken (token, lookahead());
 
 } // if
 
 } // while
+
+output(do(generate.nodeEnd()));
 return text;
 
-function outputBlock (block, generate) {
-console.log ("outputBlock: ", util.inspect(block.label, {depth: null, breakLength: 3}));
-if (block.label && block.label.body.length > 0) {
-console.log ("- found label", block.label.text);
-//if (generate && isFunction(generate.blockLabelStart)) output (generate.blockLabelStart (block.label.text));
-if (generate && isFunction(generate.blockLabel)) output (generate.blockLabel(transform (block.label, generate)));
-//if (generate && isFunction(generate.blockLabelEnd)) output (generate.blockLabelEnd ());
-} // if
+function outputBlockLabel (label) {
+if (! label) return "";
+for (var i=0; i<label.body.length; i++) {
+outputToken (
+label.body[i],
+(i<label.body.length-1)? label.body[i+1] : null
+);
+} // for
+} // outputblockLabel
 
-if (generate && isFunction(generate.blockStart)) output (generate.blockStart());
+function outputBlock (block, generate) {
+
+output (do(generate.blockStart()));
 output (transform (block, generate));
-if (generate && isFunction(generate.blockEnd)) output (generate.blockEnd (block.label && block.label.text));
+output (do(generate.blockEnd (block.label && block.label.text)));
 
 output ("\n");
 } // outputBlock
 
-function endStatement (_token, type) {
-output (_token.value);
+function endStatement (_token, generate) {
+output(do(generate.statementEnd()));
 output ("\n");
+output(do(generate.statementStart()));
 } // endStatement
 
 function outputToken (_token, _nextToken) {
@@ -341,11 +377,43 @@ function isFunction (x) {
 
 
 
+/// list
 
-/*var fs = require ("fs");
-var t = fs.readFileSync ("./t.js");
-var p = es.tokenize (t);
-//console.log (
-tree (p)
-);
-*/
+"use strict";
+
+
+function list (items) {
+return {
+items: items,
+index: 0,
+
+get: function (i) {
+if (! i) i = this.index;
+return (this.isInRange(i))? this.items[i]
+: null;
+}, // get
+
+next: function () {
+if (this.isInRange(this.index)) this.index += 1;
+return this.get();
+}, // next
+
+set: function (i) {
+if (this.isInRange(i)) {
+this.index = i;
+return get ();
+} // if
+
+return null;
+}, // set
+
+
+lookahead: function (n) {
+if (! n) n = 1;
+return this.get (this.index + n);
+}, // lookahead
+
+isInRange: function (i) {return (i>=0 && i<this.items.length);},
+}; // return
+} // list
+
