@@ -12,7 +12,7 @@ x += x / y * x+y;
 `);
 
 
-result = parse(tokens, generate().text);
+result = parse(tokens, generate().html);
 
 console.log (`Processing ${tokens.length} tokens:\n`,
 //util.inspect (
@@ -70,29 +70,32 @@ block.body.push (x);
 function transform (tree, generate) {
 var text = "";
 var tokens = TokenStream (tree.body);
-var token;
-outputWith(generate.blockStart);
+var newStatement = true;
 
-while (token = tokens.get()) {
-if (isBlock (token)) {
+while (tokens.get()) {
+if (newStatement) {
+outputWith (generate.statementStart);
+newStatement = false;
+} // if
+
+if (isBlock (tokens.get())) {
 outputWith (generate.blockContentStart);
-output (transform (token, generate));
+output (transform (tokens.get(), generate));
 outputWith (generate.blockContentEnd);
-//statementStart = true;
 
 } else if (tokens.isStatementTerminator ()) {
 outputWith(generate.statementEnd);
 output ("\n");
+newStatement = true;
 
 } else {
 outputToken (tokens.get(), tokens.lookahead());
-
 } // if
 
 tokens.next();
 } // while
 
-outputWith (generate.blockEnd);
+outputWith (generate.statementEnd);
 return text;
 
 function outputBlockLabel (label) {
@@ -264,10 +267,9 @@ return (i>=0 && i<items.length);
 } // list
 
 function generate () {
-var generators = {};
-
+return {
 /// text output
-generators.text = {
+text: {
 	statementEnd: function () {
 		return ";";
 	}, // statementEnd
@@ -285,32 +287,10 @@ blockContentStart: function () {
 		if (label) text += " // " + label;
 		return text;
 	} // blockContentEnd
-}; // generateText
+}, // text
 
 /// html output
-/* should look like this:
-<div class="block">
-<div class="block header">
-while (test())
-</div><!-- .block.header -->
-<div class="block content">
-<div class="folded">{...}</div>
-<div class="unfolded content">
-... program text (may include other block specifications) ...
-</div>
-</div></div>
-*/
-
-generators.html = {
-	nodeStart: function () {
-		return '<div class="node">';
-	}, // nodeStart
-
-
-	nodeEnd: function () {
-		return '</div><!-- .node -->';
-	}, // nodeStart
-
+html: {
 	statementStart: function () {
 		return '<div class="statement">';
 	}, // statementStart
@@ -325,21 +305,20 @@ generators.html = {
 + '</div><!-- .block.header -->';
 	}, // blockLabel
 
-	blockStart: function () {
-return '<div class="block content">'
+	blockContentStart: function (program) {
+var type = (program)? "program" : "block";
+return '<div class="' + type + ' content">'
 + '<div class="folded">{...}</div>'
 + '<div class="unfolded">';
 	}, // blockStart
 	
-	blockEnd: function (label) {
+	blockContentEnd: function (label) {
 		var comment = "";
 		if (label) comment += " // " + label + "\n";
 		return comment
 		+ '</div><!-- .unfolded -->'
-		+ '</div><!-- .block.content -->'
-		+ '</div><!-- .block -->';
-	} // blockEnd
-}; // generateHtml
-
-return generators;
+		+ '</div><!-- .block.content -->';
+		} // blockEnd
+} // html
+}; // return
 } // generate
