@@ -12,7 +12,7 @@ x += x / y * x+y;
 `);
 
 
-result = parse(tokens, generate().html);
+result = parse(tokens, generate().text);
 
 console.log (`Processing ${tokens.length} tokens:\n`,
 //util.inspect (
@@ -27,7 +27,8 @@ if (! generate) throw new Error ("need generator");
 if (! _tokens) return null;
 tokens = TokenStream (_tokens);
 
-return transform (_parseBlocks (0, ""), generate);
+//return transform (_parseBlocks (0, ""), generate);
+return generate.program (transform (_parseBlocks (0, ""), generate));
 
 function _parseBlocks (level, label) {
 var block = {
@@ -71,17 +72,34 @@ function transform (tree, generate) {
 var text = "";
 var tokens = TokenStream (tree.body);
 var newStatement = true;
+console.log ("transform: ", tree.type, tree.level, tree.body.length + " tokens");
 
 while (tokens.get()) {
 if (newStatement) {
+
+if (tokens.is ("Keyword", "function")) {
+tree.label = (tokens.isToken(tokens.lookahead(), "Identifier"))? 
+tokens.lookahead().value
+:tokens.get().value;
+//console.log ("- function label: ", tree.label);
+
+} else if (tokens.is("Identifier") && tokens.isToken (tokens.lookahead(), "Punctuator")) {
+tree.label = tokens.get().value;
+//console.log ("- label: possible object assignment = ", tree.label);
+
+} else if (tokens.is("Keyword")) {
+tree.label = tokens.get().value;
+} // if
+
 outputWith (generate.statementStart);
 newStatement = false;
 } // if
 
 if (isBlock (tokens.get())) {
-outputWith (generate.blockContentStart);
-output (transform (tokens.get(), generate));
-outputWith (generate.blockContentEnd);
+outputWith (generate.block,
+transform (tokens.get(), generate),
+tree.label
+); // outputWith
 
 } else if (tokens.isStatementTerminator ()) {
 outputWith(generate.statementEnd);
@@ -95,7 +113,6 @@ outputToken (tokens.get(), tokens.lookahead());
 tokens.next();
 } // while
 
-outputWith (generate.statementEnd);
 return text;
 
 function outputBlockLabel (label) {
@@ -130,9 +147,12 @@ function isBlock (_token) {
 return _token && _token.type === "Block";
 } // isBlock
 
-function outputWith (f, s) {
-return (isFunction(f))? output (f(s))
-: "";
+function outputWith (f, arg1, arg2) {
+return (
+(isFunction(f))?
+output (f(arg1, arg2))
+: ""
+); // return
 } // outputWith
 
 } // transform
@@ -172,7 +192,7 @@ return (a instanceof Array) && a.indexOf(v) >= 0;
 
 
 function isFunction (x) {
-	return x && (x instanceof Function);
+return x && (x instanceof Function);
 } // isFunction
 } // parse
 
@@ -185,7 +205,9 @@ if (! tokens) throw new Error ("TokenStream: null argument given");
 if (tokens instanceof Array) tokens = List(tokens);
 
 return {
+read: read,
 get: tokens.get,
+current: tokens.get,
 next: tokens.next,
 end: function () {return (!tokens.isInRange());},
 
@@ -194,29 +216,33 @@ if (! n) n = 1;
 return tokens.get (tokens.index() + n);
 }, // lookahead
 
-is: function (_token, _type, _value) {
-return isToken (_token || tokens.get(), _type, _value);
+isToken: isToken,
+is: function (_type, _value) {
+return isToken (tokens.get(), _type, _value);
 }, // is
 
-isBlockStart: function (_token) {return this.is (_token, "Punctuator", "{");},
-isBlockEnd: function (_token) {return this.is (_token, "Punctuator", "}");},
+isBlockStart: function (_token) {return this.is ("Punctuator", "{", _token);},
+isBlockEnd: function (_token) {return this.is ("Punctuator", "}", _token);},
 
-isBlockLabel: function (_token) {
-return (
-this.is (_token, "Keyword")
-|| this.is (_token, "Identifier")
-); // return
-}, // isBlockLabel
-
-isStatementTerminator: function (_token) {return this.is (_token, "Punctuator", ";");}
+isStatementTerminator: function (_token) {return this.is ("Punctuator", ";", _token);}
 }; // Stream
+
+function read (i) {
+var text = "";
+if (arguments.length === 0) i = tokens.index();
+while (tokens.isInRange(i)) {
+result += tokens.get(i++).value + " ";
+} // while
+
+return result.trim();
+} // read
 
 function isToken (_token, type, value) {
 //console.log ("_isToken: ", arguments.length, _token.value, type, value);
 if (! _token) throw new Error ("TokenStream.isToken: No token.");
 if (! _token.type) throw new Error ("Invalid token - type missing.");
 //if (! _token.value) throw new Error ("token of type " + _token.type + " must have a value.");
-if (! type) throw new Error ("_isToken: must supply at least type");
+if (! type) throw new Error ("must supply at least type");
 
 if (type !== _token.type) return false;
 if (arguments.length < 2 || typeof(value) === "undefined") return true;
@@ -270,55 +296,61 @@ function generate () {
 return {
 /// text output
 text: {
-	statementEnd: function () {
-		return ";";
-	}, // statementEnd
+statementEnd: function () {
+return ";";
+}, // statementEnd
 
-blockLabel: function (text) {
-		return text;
-	}, // blockLabel
+program: function (content) {
+return content + "\n";
+}, // program
 
-blockContentStart: function () {
-		return "{\n";
-	}, // blockContentStart
-
-	blockContentEnd: function (label) {
-		var text = "}";
-		if (label) text += " // " + label;
-		return text;
-	} // blockContentEnd
+block: function (content, label) {
+console.log ("text.block: ", label, ", content = ", content);
+if (label) label = " // " + label;
+return (
+"{\n"
++ content
++ "}"
++ label
++ "\n"
+); // return
+} // block
 }, // text
 
 /// html output
 html: {
-	statementStart: function () {
-		return '<div class="statement">';
-	}, // statementStart
+statementStart: function () {
+return '<div class="statement">';
+}, // statementStart
 
-	statementEnd: function () {
-		return '</div><!-- .statement -->';
-	}, // statementStart
+statementEnd: function () {
+return '</div><!-- .statement -->';
+}, // statementEnd
 
-	blockLabel: function (text) {
-		return '<div class="block header">'
+blockLabel: function (text) {
+return '<div class="block header">'
 + text
 + '</div><!-- .block.header -->';
-	}, // blockLabel
+}, // blockLabel
 
-	blockContentStart: function (program) {
-var type = (program)? "program" : "block";
-return '<div class="' + type + ' content">'
-+ '<div class="folded">{...}</div>'
-+ '<div class="unfolded">';
-	}, // blockStart
-	
-	blockContentEnd: function (label) {
-		var comment = "";
-		if (label) comment += " // " + label + "\n";
-		return comment
-		+ '</div><!-- .unfolded -->'
-		+ '</div><!-- .block.content -->';
-		} // blockEnd
+program: function (content) {
+return (
+'<div class="program block">\n'
++ content
++ '</div><!-- .program -->\n'
+); // return
+}, // program
+
+block: function (content) {
+return (
+'<div class="block">\n'
++ '<div class="folded">{...}</div>\n'
++ '<div class="content unfolded">\n'
++ content
++ '</div><!-- .content -->\n'
++ '</div><!-- .block -->\n'
+); // return
+}, // block
 } // html
 }; // return
 } // generate
