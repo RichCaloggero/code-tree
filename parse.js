@@ -322,3 +322,4 @@ return '<div class="' + type + ' content">'
 } // html
 }; // return
 } // generate
+
