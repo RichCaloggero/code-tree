@@ -1,17 +1,9 @@
 "use strict";
 /*var es = require ("./esprima");
 var fs = require ("fs");
-var text = fs.readFileSync ("t.txt", "utf-8");
-text = `
-function f() {
-while (true) {
-doSomething ();
-}
-return;
-}
-`;
+var text = fs.readFileSync ("t1.txt", "utf-8");
 //console.log ("source:\n", text);
-console.log ("html:\n", parse(es.tokenize(text), generate().text));
+console.log ("html:\n", parse(es.tokenize(text), generate().html));
 */
 
 function parse (_tokens, generate) {
@@ -97,11 +89,16 @@ newStatement = true;
 
 } else if (isBlock (tokens.get())) {
 outputWith (generate.statementContentEnd);
+
+output (" {\n");
 outputWith (generate.block,
 transform (tokens.get(), generate),
 tree.label
 ); // outputWith
+output (" {\n");
+
 outputWith (generate.statementEnd);
+newStatement = true;
 
 } else {
 outputToken (tokens.get(), tokens.lookahead());
@@ -208,13 +205,7 @@ return content + "\n";
 block: function (content, label) {
 //console.log ("text.block: ", label, ", content = ", content);
 if (label) label = " // " + label;
-return (
-"{\n"
-+ content
-+ "}"
-+ label
-+ "\n"
-); // return
+return (content + label + "\n");
 }, // block
 
 }, // text
@@ -229,12 +220,11 @@ return (
 ); // return
 }, // program
 
-block: function (content) {
+block: function (content, label) {
 return (
-'<span class="folded">{...}</span>\n'
-+ '<div class="block">\n'
+'<div class="block">\n'
 + content
-+ '</div><!-- .unfolded.block -->\n'
++ '</div><!-- .block -->\n'
 ); // return
 }, // block
 

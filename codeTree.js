@@ -1,6 +1,9 @@
 "use strict";
 $(document).ready (function () {
+var $foldMarker = $('<span class="fold-marker">...</span>');
+
 var $savedNode = null;
+
 jQuery.get ("t.txt", null, null, "text")
 .fail (function (error) {
 alert (error);
@@ -15,7 +18,6 @@ displayTree ( $("#codeTree") );
 }); // update on change
 
 $("#codeTree").on ("click", ".statement", function (e) {
-//toggleFold ($(e.target));
 e.stopPropagation ();
 e.stopImmediatePropagation ();
 e.preventDefault ();
@@ -51,13 +53,17 @@ return true;
 
 function cut ($from) {
 status ("cut " + $from[0].className);
-return $from;
+return $from.remove();
 } // cut
+
+function copy () {
+return ($savedNode = currentNode());
+} // copy
 
 function paste ($from, $to) {
 if ($from[0] === $to[0]) return;
-if ($to.prev(".item")[0] === $from[0]) return;
-$from = $from.remove ();
+if ($to.prev(".statement")[0] === $from[0]) return;
+$from = cut ($from);
 $to.before ($from);
 status ("paste " + $from[0].className + " before " + $to[0].className);
 } // paste
@@ -96,11 +102,8 @@ html = toHtml(parseTree);
 */
 
 $codeTree.html (html);
-//$codeTree.find(".fold-marker").remove();
 foldAll ($codeTree);
 
-
-// toggle fold status
 
 treeWalker ({
 $container: $codeTree.find (".block").first(),
@@ -128,20 +131,17 @@ $tree.find (".unfolded").show ();
 } // unfoldAll
 
 function foldAll ($tree) {
-$tree.find (".unfolded").hide ();
-$tree.find (".folded").show ();
+fold ($tree.find (".statement .block"));
 } // foldAll
 
 function unfold ($statement) {
-//debug ("unfolding... ");
-$(".unfolded:first", $statement).show ();
-$(".folded:first", $statement).hide();
+$statement.find($foldMarker).first().remove()
+$statement.find (".block:first").show ();
 } // unfold
 
 function fold ($statement) {
-//debug ("folding... ");
-$(".folded:first", $statement).show ();
-$(".unfolded:first", $statement).hide();
+$statement.find(".block:first").hide ();
+$statement.find (".content").append ($foldMarker);
 } // fold
 
 function toggleFold ($block) {
