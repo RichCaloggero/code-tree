@@ -131,7 +131,7 @@ $tree.find (".unfolded").show ();
 } // unfoldAll
 
 function foldAll ($tree) {
-fold ($tree.find (".statement .block"));
+fold ($tree.find (".statement .block").parent());
 } // foldAll
 
 function unfold ($statement) {
