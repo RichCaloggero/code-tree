@@ -1,4 +1,5 @@
-/* makeAccessible
+"use strict";
+/* treeWalker
   arguments:
  options,
  or container, name, options
@@ -26,6 +27,7 @@
 function treeWalker($container, name) {
 // defaults
 var options = {
+name: "treeWalker",
 open: function(){}, close: function(){},
 role_root: "tree",
 role_group: "group",
@@ -35,6 +37,8 @@ branch: "li",
 state_expanded: "aria-expanded"
 }; // defaults
 
+var activeDescendant_id = options.name + "-activeDescendant";
+
 if (arguments.length == 1) {
 options = $.extend (options, arguments[0]);
 } else if (arguments.length == 2) {
@@ -43,7 +47,6 @@ options = $.extend (options, {$container: $container, name: name});
 options = $.extend (options, {$container: $container, name: name}, arguments[2]);
 } // if
 
-var activeDescendant_id = options.name + "-activeDescendant";
 //debug ("makeAccessible:", options);
 
 return addKeyboardNavigation (addAria (options.$container));
@@ -53,8 +56,7 @@ function addAria ($container) {
 Keyboard-navigable JavaScript widgets - Accessibility | MDN
 https://developer.mozilla.org/en-US/docs/Web/Accessibility/Keyboard-navigable_JavaScript_widgets
 */
-var $ul;
-var $hasChildren, $li;
+var $groups, $branches, $hasChildren;
 
 // remove all implicit keyboard focus handlers (i.e. links and buttons should not be tabbable here since we're using aria-activedescendant to manage focus)
 $("a, button, [tabindex]", $container).attr ("tabindex", "-1");
@@ -89,28 +91,40 @@ return $container;
 function addKeyboardNavigation ($container) {
 
 // add keyboard handler
-$container.on ("keydown click", interactionHandler);
+$container.on ("keydown", interactionHandler)
+.on ("mouseenter", `[role=${options.role_branch}]`, function (e) {
+var $node = $(e.target).closest (`[role=${options.role_branch}]`);
+//debug ("entering ", e.target.nodeName, $node.children().first().text());
+
+if ($node[0] !== getCurrentNode()[0]) setCurrentNode ($node);
+return true;
+});
+
 return $container;
 
 function interactionHandler (e) {
-var key = (e.type === "keydown")? e.which || e.keyCode : "click";
+var action = (e.type === "keydown")? (e.which || e.keyCode) : "click";
 var $newNode = null;
 var $currentNode = getCurrentNode();
 var actions = {
-click: "toggle",
+//click: "click",
+13: "click", 32: "click",
+
 "38": "previous", "40": "next",
 "37": "up", "39": "down"
 };
 
-if (key !== "click" && (key > 40 || key < 35)) return true;
+if (! (action in actions)) return true;
 
-//debug ("key: " + key);
-$newNode = navigate ($currentNode, actions[String(key)]);
+//debug ("action: ", action);
+$newNode = navigate ($currentNode, actions[String(action)]);
 
-if (isValidNode($newNode) && $newNode !== $currentNode) {
+if (isValidNode($newNode)) {
 //debugNode ($newNode, "navigate: ");
+if (action === "click" || $newNode !== $currentNode) {
 if (options.leaveNode && options.leaveNode instanceof Function) options.leaveNode ($currentNode, $newNode);
 setCurrentNode ($newNode);
+} // if
 } // if
 return false;
 
@@ -120,6 +134,19 @@ return false;
 function navigate ($start, operation) {
 //debugNode ($start, "navigate: ");
 if (! isValidNode($start)) return null;
+//debug ("navigate: ", operation);
+
+if (operation === "click") {
+if (isLeafNode ($start)) {
+return ($start);
+} // if
+
+if (!isOpened($start)) $start = open($start);
+else $start = close ($start);
+return $start;
+} // if
+
+if (options.noArrowKeyNavigation) return null;
 
 switch (operation) {
 case "previous": return previous ($start, options.flow);
@@ -127,34 +154,18 @@ case "previous": return previous ($start, options.flow);
 case "next": return next ($start, options.flow);
 
 case "up":
-if (options.beforeClose && options.beforeClose instanceof Function) options.beforeClose($start); 
-
-/*if (options.flow) {
-if (isOpened ($start)) {
-close($start);
-return $start;
-} // if
-return up($start);
-
+if (options.flow) {
+$start = close($start);
+$start = up($start);
 } else {
-*/
-close($start);
-return up($start);
-//} // if
+$start = up($start);
+$start = close($start);
+} // if
+return $start;
 
 case "down": 
-/*if (options.flow) {
-if (isOpened ($start)) {
-return down($start);
-} // if
-open ($start);
-return $start;
-
-} else {
-*/
-open ($start);
-return down ($start);
-//} // if
+$start = open ($start);
+return $start = down ($start);
 
 default: return null;
 } // switch
@@ -181,19 +192,26 @@ return $node;
 } // open
 
 function close ($node) {
+if (options.beforeClose && options.beforeClose instanceof Function) options.beforeClose($node); 
 if (isOpened($node)) {
 $node.attr (options.state_expanded, "false");
 if (options.close && options.close instanceof Function) options.close($node);
 } // if
+
 return $node;
 } // close
 
 function previous ($node, flow) {
+var $result;
 var $parent = up($node);
 var $previous = $node.prev ();
 if (! flow) return $previous;
 
-if (isValidNode($previous) && !isLeafNode($previous) && isOpened($previous)) return down ($previous).nextAll().last();
+if (isValidNode($previous) && !isLeafNode($previous) && isOpened($previous)) {
+$result = down ($previous);
+if ($result.nextAll().length > 0) $result = $result.nextAll().last();
+return $result;
+} // if
 
 if (! isValidNode($previous) && isValidNode($parent) && isOpened($parent)) return $parent;
 return $previous;

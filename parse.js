@@ -90,14 +90,14 @@ newStatement = true;
 } else if (isBlock (tokens.get())) {
 outputWith (generate.statementContentEnd);
 
-output (" {\n");
+//output (" {\n");
 outputWith (generate.block,
-transform (tokens.get(), generate),
+"{\n" + transform (tokens.get(), generate) + "\n}",
 tree.label
 ); // outputWith
-output (" {\n");
-
+//output ("}");
 outputWith (generate.statementEnd);
+output ("\n");
 newStatement = true;
 
 } else {

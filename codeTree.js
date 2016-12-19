@@ -126,8 +126,7 @@ fold ($node);
 
 
 function unfoldAll ($tree) {
-$tree.find (".folded").hide ();
-$tree.find (".unfolded").show ();
+unfold ( $(".statement .fold-marker", $tree).parent().parent());
 } // unfoldAll
 
 function foldAll ($tree) {
@@ -135,13 +134,15 @@ fold ($tree.find (".statement .block").parent());
 } // foldAll
 
 function unfold ($statement) {
-$statement.find($foldMarker).first().remove()
+var $marker = $(".fold-marker", $statement).first();
+//debug ("unfolding: ", $statement.length, $marker.length, $marker.parent().text());
+$marker.remove ();
 $statement.find (".block:first").show ();
 } // unfold
 
 function fold ($statement) {
 $statement.find(".block:first").hide ();
-$statement.find (".content").append ($foldMarker);
+$statement.find (".content").first().append ($foldMarker.clone());
 } // fold
 
 function toggleFold ($block) {
