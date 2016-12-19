@@ -14,7 +14,7 @@ $(".editor").on ("change", ".content", function () {
 displayTree ( $("#codeTree") );
 }); // update on change
 
-$("#codeTree").on ("click", ".item", function (e) {
+$("#codeTree").on ("click", ".statement", function (e) {
 //toggleFold ($(e.target));
 e.stopPropagation ();
 e.stopImmediatePropagation ();
@@ -75,10 +75,12 @@ function currentNode () {
 return $("#codeTree").find ("#treeTest-activeDescendant");
 } // currentNode
 
-function displayTree ($folded) {
+function displayTree ($codeTree) {
 var parseTree, html;
 var text = $(".editor .content").val ();
-parseTree = esprima.parse (text, {
+html = parse (esprima.tokenize(text), generate().html);
+
+/*parseTree = esprima.parse (text, {
 	//loc: true,
 });
 $("#debug").html("");
@@ -91,52 +93,55 @@ JSON.stringify(parseTree)
 ); // debug
 
 html = toHtml(parseTree);
+*/
 
-$folded.html (html);
-$folded.find(".fold-marker").remove();
-foldAll ($folded);
+$codeTree.html (html);
+//$codeTree.find(".fold-marker").remove();
+foldAll ($codeTree);
 
 
 // toggle fold status
 
 treeWalker ({
-$container: $folded.find (".block:first"),
+$container: $codeTree.find (".block").first(),
 name: "treeTest",
 flow: true,
 
 group: ".block", 
-branch: ".item",
+branch: ".statement",
 
 open : function ($node) {
 //debug ("myOpen: " + $node[0].className);
-unfold ($node.find(".block:first"));
+unfold ($node);
 }, // open
 
 close : function ($node) {
 //debug ("myClose: " + $node[0].className);
-fold ($node.find (".block:first"));
+fold ($node);
 }, // close
-}); // makeAccessible
+}); // treeWalker
 
 
 function unfoldAll ($tree) {
-$tree.find (".fold-trigger .block .content")
-.addClass("hidden");
+$tree.find (".folded").hide ();
+$tree.find (".unfolded").show ();
 } // unfoldAll
 
 function foldAll ($tree) {
-$tree.find (".fold-trigger .block .content")
-.addClass("hidden");
+$tree.find (".unfolded").hide ();
+$tree.find (".folded").show ();
 } // foldAll
 
-function unfold ($block) {
+function unfold ($statement) {
 //debug ("unfolding... ");
-$block.find (".content").removeClass ("hidden");
+$(".unfolded:first", $statement).show ();
+$(".folded:first", $statement).hide();
 } // unfold
 
-function fold ($block) {
+function fold ($statement) {
 //debug ("folding... ");
-$block.find (".content").addClass ("hidden");
+$(".folded:first", $statement).show ();
+$(".unfolded:first", $statement).hide();
 } // fold
 
 function toggleFold ($block) {

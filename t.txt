@@ -1,97 +1,26 @@
-function toHtml (tree) {
-"use strict";
-var $html, output, typeMap, text;
+var global;
+while (true) {
+outer ();
+} // while
 
-text = createText ();
-typeMap = createTypeMap ();
-function output (_text) {
-text.append (_text);
-} // output
+function outer () {
+var foo, bar;
+while (something()) {f();}
+while (somethingElse()) {
+doThis();
+doThat();
+doThose();
+} // while
 
-if (! tree || !(tree instanceof Object)) {
-	alert (`argument 1 to toHtml must be a valid esprima AST - must be an object - ${typeof(tree)}`);
-	return ("");
-} // if
+function f(x) {
+var x=1, y=2, z=3;
+x=5;
+y=6; z=7;
+frog();
+toad();
+sheep();
+return dog;
+} // f
 
-process (tree);
-return text.value();
-
-
-function process (tree, _options) {
-var options = {
-separator: "",
-terminator: ";\n",
-keyword: "",
-alt: null
-}; // options
-options = Object.assign (options, _options);
-
-if (tree instanceof Array) {
-tree.forEach (function (tree, index, values) {
-process (tree);
-if (options.separator && index < values.length-1) output (options.separator);
-}); // forEach
-
-} else {
-if (tree.type && typeof(typeMap[tree.type]) === "function") {
-//debug (`type: ${tree.type}`);
-try {
-	return typeMap[tree.type] (tree, options);
-} catch (e) {
-	alert(`can't execute: ${tree.type} / ${typeof(typeMap[tree.type])} / ${typeMap[tree.type] instanceof Function}`);
-} // try
-
-} else {
-alert (`missing or unknown type: ${tree.type} - ${typeof(typeMap[tree.type])}`);
-throw new Error ("missing type");
-} // if
-} // if
-} // process
-
-
-/// type map
-
-function createTypeMap () {
-return {};
-} // createTypeMap
-
-
-/// output
-
-function createText () {
-return {
-text: "",
-stack: [],
-value: function () {return this.text;},
-
-/*save: function () {
-this.stack.push (this.text);
-this.text = "";
-}, // save
-
-restore: function () {
-var _text = this.text;
-this.text = this.stack.pop();
-return _text;
-}, // restore
-
-clear: function () {
-this.text = "";
-}, // clear
-*/
-
-append: function (_text) {
-this.text += (_text);
-//debug (`text.append: ${_text.length} ${this.text.length}`);
-
-function escapeHtml (html) {
-html = html.replace ("&", "&amp;");
-html = html.replace ("<", "&lt;");
-html = html.replace (">", "&gt;");
-return html;
-} // escapeHtml
-} // append
-}; // text
-} // createText
-
-} // toHtml
+go("foobar");
+} // outer

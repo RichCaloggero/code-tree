@@ -1,25 +1,18 @@
 "use strict";
-var util = require ("util");
-var es = require ("./esprima");
-var result;
-var tokens = es.tokenize (`
-var x, y;
-while (x < (y+z)) {
---x[7];
-y++;
-x += x / y * x+y;
+/*var es = require ("./esprima");
+var fs = require ("fs");
+var text = fs.readFileSync ("t.txt", "utf-8");
+text = `
+function f() {
+while (true) {
+doSomething ();
 }
-`);
-
-
-result = parse(tokens, generate().text);
-
-console.log (`Processing ${tokens.length} tokens:\n`,
-//util.inspect (
-result[0] == " ", result
-//, {depth: null, breakLength: 3})
-, "\nDone.\n"
-);
+return;
+}
+`;
+//console.log ("source:\n", text);
+console.log ("html:\n", parse(es.tokenize(text), generate().text));
+*/
 
 function parse (_tokens, generate) {
 var tokens;
@@ -38,15 +31,12 @@ level: level,
 body: []
 }; // block
 
-//console.log ("_parseBlocks: ", level, index);
+//console.log ("_parseBlocks: ", level, tokens.index(), tokens.get());
 
 while (!tokens.end() && !tokens.isBlockEnd ()) {
-if (
-tokens.isBlockStart ()
-// || tokens.isBlockLabel () 
-) {
+if (tokens.isBlockStart ()) {
 tokens.next();
-output (_parseBlocks(level+1, label));
+output (_parseBlocks(level+1));
 
 } else {
 output (tokens.get());
@@ -56,7 +46,7 @@ tokens.next();
 } // while
 
 if (tokens.end() && level !== 0) throw new Error ("Premature end of input reached!");
-tokens.next ();
+//tokens.next ();
 return block;
 
 
@@ -72,10 +62,15 @@ function transform (tree, generate) {
 var text = "";
 var tokens = TokenStream (tree.body);
 var newStatement = true;
-console.log ("transform: ", tree.type, tree.level, tree.body.length + " tokens");
+//console.log ("transform: ", tree.type, tree.level, tree.body.length + " tokens");
 
 while (tokens.get()) {
 if (newStatement) {
+outputWith (generate.statementStart);
+outputWith (generate.statementContentStart);
+newStatement = false;
+
+// calculate label (primarily for end-of-block comment generation in text output mode)
 
 if (tokens.is ("Keyword", "function")) {
 tree.label = (tokens.isToken(tokens.lookahead(), "Identifier"))? 
@@ -91,20 +86,22 @@ tree.label = tokens.get().value;
 tree.label = tokens.get().value;
 } // if
 
-outputWith (generate.statementStart);
-newStatement = false;
 } // if
 
-if (isBlock (tokens.get())) {
+if (tokens.isStatementTerminator ()) {
+outputToken (tokens.get(), tokens.lookahead());
+outputWith (generate.statementContentEnd);
+outputWith(generate.statementEnd);
+output ("\n");
+newStatement = true;
+
+} else if (isBlock (tokens.get())) {
+outputWith (generate.statementContentEnd);
 outputWith (generate.block,
 transform (tokens.get(), generate),
 tree.label
 ); // outputWith
-
-} else if (tokens.isStatementTerminator ()) {
-outputWith(generate.statementEnd);
-output ("\n");
-newStatement = true;
+outputWith (generate.statementEnd);
 
 } else {
 outputToken (tokens.get(), tokens.lookahead());
@@ -197,8 +194,68 @@ return x && (x instanceof Function);
 } // parse
 
 
+/// Default generators
 
-/// token stream
+
+function generate () {
+return {
+/// text output
+text: {
+program: function (content) {
+return content + "\n";
+}, // program
+
+block: function (content, label) {
+//console.log ("text.block: ", label, ", content = ", content);
+if (label) label = " // " + label;
+return (
+"{\n"
++ content
++ "}"
++ label
++ "\n"
+); // return
+}, // block
+
+}, // text
+
+/// html output
+html: {
+program: function (content) {
+return (
+'<div class="program block">\n'
++ content
++ '</div><!-- .program -->\n'
+); // return
+}, // program
+
+block: function (content) {
+return (
+'<span class="folded">{...}</span>\n'
++ '<div class="block">\n'
++ content
++ '</div><!-- .unfolded.block -->\n'
+); // return
+}, // block
+
+statementStart: function () {
+return '<div class="statement">';
+}, // statementStart
+
+statementContentStart: function () {
+return '<span class="content">';
+}, // statementContentStart
+
+statementContentEnd: function () {
+return '</span>';
+}, // statementContentEnd
+
+statementEnd: function () {
+return '</div><!-- .statement -->';
+} // statementEnd
+} // html
+}; // return
+} // generate
 
 function TokenStream (tokens) {
 if (! tokens) throw new Error ("TokenStream: null argument given");
@@ -208,6 +265,9 @@ return {
 read: read,
 get: tokens.get,
 current: tokens.get,
+index: tokens.index,
+value: function () {return (tokens.get())? tokens.get().value : "";},
+
 next: tokens.next,
 end: function () {return (!tokens.isInRange());},
 
@@ -255,6 +315,7 @@ return value === _token.value;
 
 function List (items) {
 var index = 0;
+if (! (items instanceof Array)) throw new Error ("invalid argument -- must be Array");
 
 return {
 items: function () {return items;},
@@ -288,70 +349,8 @@ return null;
 
 function isInRange (i) {
 if (arguments.length === 0) i = index;
+//console.log ("isInRange: length = ", items.length);
 return (i>=0 && i<items.length);
 } // isInRange
 } // list
-
-function generate () {
-return {
-/// text output
-text: {
-statementEnd: function () {
-return ";";
-}, // statementEnd
-
-program: function (content) {
-return content + "\n";
-}, // program
-
-block: function (content, label) {
-console.log ("text.block: ", label, ", content = ", content);
-if (label) label = " // " + label;
-return (
-"{\n"
-+ content
-+ "}"
-+ label
-+ "\n"
-); // return
-} // block
-}, // text
-
-/// html output
-html: {
-statementStart: function () {
-return '<div class="statement">';
-}, // statementStart
-
-statementEnd: function () {
-return '</div><!-- .statement -->';
-}, // statementEnd
-
-blockLabel: function (text) {
-return '<div class="block header">'
-+ text
-+ '</div><!-- .block.header -->';
-}, // blockLabel
-
-program: function (content) {
-return (
-'<div class="program block">\n'
-+ content
-+ '</div><!-- .program -->\n'
-); // return
-}, // program
-
-block: function (content) {
-return (
-'<div class="block">\n'
-+ '<div class="folded">{...}</div>\n'
-+ '<div class="content unfolded">\n'
-+ content
-+ '</div><!-- .content -->\n'
-+ '</div><!-- .block -->\n'
-); // return
-}, // block
-} // html
-}; // return
-} // generate
 
