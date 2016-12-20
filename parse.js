@@ -55,6 +55,7 @@ var text = "";
 var tokens = TokenStream (tree.body);
 var newStatement = true;
 //console.log ("transform: ", tree.type, tree.level, tree.body.length + " tokens");
+output ("\n");
 
 while (tokens.get()) {
 if (newStatement) {
@@ -90,12 +91,11 @@ newStatement = true;
 } else if (isBlock (tokens.get())) {
 outputWith (generate.statementContentEnd);
 
-//output (" {\n");
 outputWith (generate.block,
-"{\n" + transform (tokens.get(), generate) + "\n}",
+"{" + transform (tokens.get(), generate) + "}",
 tree.label
 ); // outputWith
-//output ("}");
+
 outputWith (generate.statementEnd);
 output ("\n");
 newStatement = true;

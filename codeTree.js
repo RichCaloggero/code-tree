@@ -1,7 +1,6 @@
 "use strict";
 $(document).ready (function () {
 var $foldMarker = $('<span class="fold-marker">...</span>');
-
 var $savedNode = null;
 
 jQuery.get ("t.txt", null, null, "text")
@@ -17,6 +16,25 @@ $(".editor").on ("change", ".content", function () {
 displayTree ( $("#codeTree") );
 }); // update on change
 
+$("#controls")
+.on ("click", ".copy", function (e) {
+copy ();
+return false;
+
+}).on ("click", ".cut", function (e) {
+cut ();
+return false;
+
+}).on ("click", ".paste", function (e) {
+paste ($savedNode, currentNode());
+return false;
+
+}).on ("click", ".save", function (e) {
+save ();
+return false;
+
+}); // click .controls
+
 $("#codeTree").on ("click", ".statement", function (e) {
 e.stopPropagation ();
 e.stopImmediatePropagation ();
@@ -24,11 +42,13 @@ e.preventDefault ();
 return false;
 
 }).on ("keypress",  function (e) {
-var key = e.key || e.which || e.keyCode;
+/*var key = e.key || e.which || e.keyCode;
 //debug ("key: ", typeof(key), " ", e.ctrlKey, " ", key, ", e.target ", e.target.className, ", this ", this.className);
 
 if (e.ctrlKey) {
 switch (key) {
+case "": copy ();
+return false;
 
 case "s": save ();
 return false;
@@ -47,23 +67,30 @@ case "Enter": case " ": $(e.target).trigger ("click");
 return false;
 } // switch
 } // if
+*/
 
 return true;
 }); // click
 
 function cut ($from) {
+if (! $from) $from = currentNode();
 status ("cut " + $from[0].className);
 return $from.remove();
 } // cut
 
 function copy () {
+status("copy...");
 return ($savedNode = currentNode());
 } // copy
 
 function paste ($from, $to) {
+if (! $from || ! $to || $from.length === 0 || $to.length === 0) {
+status ("Paste not performed - null parameter given");
+return;
+} // if
+
 if ($from[0] === $to[0]) return;
 if ($to.prev(".statement")[0] === $from[0]) return;
-$from = cut ($from);
 $to.before ($from);
 status ("paste " + $from[0].className + " before " + $to[0].className);
 } // paste
@@ -71,14 +98,15 @@ status ("paste " + $from[0].className + " before " + $to[0].className);
 function save () {
 var code = $("#codeTree").text();
 code = code.replace (/\n\n/g, "\n");
+code=code.replace (/\n\{/g, " {\n");
 
 
-$(".editor .content").val (code);
+$(".editor .content").val (parse(esprima.tokenize(code), generate().text));
 status ("save complete");
 } // save
 
 function currentNode () {
-return $("#codeTree").find ("#treeTest-activeDescendant");
+return $("#codeTree").find ("#treeWalker-activeDescendant");
 } // currentNode
 
 function displayTree ($codeTree) {
@@ -181,7 +209,7 @@ enableEditor ($editor);
 $(this).attr ("aria-pressed", "true");
 } // if
 
-}).on ("keydown", "button,a", function (e) {
+}).on ("keypress", "button,a", function (e) {
 $(e.target).trigger ("click");
 }); // click .edit
 
