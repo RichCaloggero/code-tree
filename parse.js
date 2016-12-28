@@ -97,6 +97,11 @@ tree.label
 ); // outputWith
 
 outputWith (generate.statementEnd);
+
+if (tokens.isStatementTerminator(tokens.lookahead())) {
+tokens.next ();
+output (";");
+} // if
 output ("\n");
 newStatement = true;
 
