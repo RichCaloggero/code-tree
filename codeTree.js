@@ -1,4 +1,5 @@
 "use strict";
+var wrap = require ("./wrap.js").wrap;
 $(document).ready (function () {
 var $foldMarker = $('<span class="fold-marker">...</span>');
 var $savedNode = null;
@@ -100,8 +101,7 @@ var code = $("#codeTree").text();
 code = code.replace (/\n\n/g, "\n");
 code=code.replace (/\n\{/g, " {\n");
 
-
-$(".editor .content").val (parse(esprima.tokenize(code), generate().text));
+$(".editor .content").val (code);
 status ("save complete");
 } // save
 
@@ -112,23 +112,7 @@ return $("#codeTree").find ("#treeWalker-activeDescendant");
 function displayTree ($codeTree) {
 var parseTree, html;
 var text = $(".editor .content").val ();
-html = parse (esprima.tokenize(text), generate().html);
-
-/*parseTree = esprima.parse (text, {
-	//loc: true,
-});
-$("#debug").html("");
-debug (
-JSON.stringify(parseTree)
-.replace (/\:\[/g, ": [\n")
-.replace (/\:\{/g, ": {\n")
-.replace (/\],/g, "],\n")
-.replace (/\},/g, "},\n")
-); // debug
-
-html = toHtml(parseTree);
-*/
-
+html = wrap(text);
 $codeTree.html (html);
 foldAll ($codeTree);
 
@@ -226,5 +210,15 @@ function status (message) {
 $("#status").html ("");
 $("#status").append (document.createTextNode (message));
 } // status
+
+function treeToString (tree) {
+return (
+JSON.stringify(tree)
+.replace (/\:\[/g, ": [\n")
+.replace (/\:\{/g, ": {\n")
+.replace (/\],/g, "],\n")
+.replace (/\},/g, "},\n")
+); // return
+} // treeToString
 
 }); // ready

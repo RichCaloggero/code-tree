@@ -1,5 +1,5 @@
 {
-  "main": "test.js",
+  "main": "codeTree.bundle.js",
   "babel": {
     "presets": [
       "es2015"
@@ -12,8 +12,8 @@
     ]
   },
   "scripts": {
-  "watch": "watchify t.js -o t.bundle.js --source-maps && echo 'Done.'",
-  "build": "browserify t.js -o t.bundle.js --source-maps"
+  "watch": "watchify codeTree.js -o codeTree.bundle.js --source-maps",
+  "build": "browserify codeTree.js -o codeTree.bundle.js --source-maps"
   },
   "dependencies": {
     "babel-runtime": "^6.9.2",
