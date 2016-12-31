@@ -1,7 +1,7 @@
 "use strict";
 var wrap = require ("./wrap.js").wrap;
 $(document).ready (function () {
-var $foldMarker = $('<span class="fold-marker">...</span>');
+var $foldMarker = $('<span class="foldMarker">...</span>');
 var $savedNode = null;
 
 jQuery.get ("t.txt", null, null, "text")
@@ -17,60 +17,36 @@ $(".editor").on ("change", ".content", function () {
 displayTree ( $("#codeTree") );
 }); // update on change
 
+
 $("#controls")
 .on ("click", ".copy", function (e) {
 copy ();
-return false;
+program().focus();
 
 }).on ("click", ".cut", function (e) {
 cut ();
+program().focus();
 return false;
 
 }).on ("click", ".paste", function (e) {
 paste ($savedNode, currentNode());
+program().focus();
 return false;
 
 }).on ("click", ".save", function (e) {
 save ();
+program().focus();
 return false;
 
 }); // click .controls
 
-$("#codeTree").on ("click", ".statement", function (e) {
+$("#codeTree")
+.on ("click", ".statement", function (e) {
 e.stopPropagation ();
 e.stopImmediatePropagation ();
 e.preventDefault ();
 return false;
 
-}).on ("keypress",  function (e) {
-/*var key = e.key || e.which || e.keyCode;
-//debug ("key: ", typeof(key), " ", e.ctrlKey, " ", key, ", e.target ", e.target.className, ", this ", this.className);
-
-if (e.ctrlKey) {
-switch (key) {
-case "": copy ();
-return false;
-
-case "s": save ();
-return false;
-
-case "x": $savedNode = cut ( currentNode() );
-return false;
-
-case "v": paste ( $savedNode, currentNode() );
-return false;
-} // switch
-
-} else {
-// no modifier
-switch (key) {
-case "Enter": case " ": $(e.target).trigger ("click");
-return false;
-} // switch
-} // if
-*/
-
-return true;
 }); // click
 
 function cut ($from) {
@@ -114,11 +90,12 @@ var parseTree, html;
 var text = $(".editor .content").val ();
 html = wrap(text);
 $codeTree.html (html);
+program().attr("accesskey", "p");
 foldAll ($codeTree);
 
 
 treeWalker ({
-$container: $codeTree.find (".block").first(),
+$container: program(),
 name: "treeTest",
 flow: true,
 
@@ -145,35 +122,22 @@ function foldAll ($tree) {
 fold ($tree.find (".statement .block").parent());
 } // foldAll
 
+function fold ($statement) {
+var $foldMarker = $statement.find ($foldMarker);
+
+$statement.find(".block:first").hide ();
+if ($foldMarker && $foldMarker.length > 0) $foldMarker.show ();
+else $statement.append ($foldMarker.clone());
+} // fold
+
 function unfold ($statement) {
 var $marker = $(".fold-marker", $statement).first();
 //debug ("unfolding: ", $statement.length, $marker.length, $marker.parent().text());
-$marker.remove ();
+$marker.hide();
 $statement.find (".block:first").show ();
 } // unfold
 
-function fold ($statement) {
-$statement.find(".block:first").hide ();
-$statement.find (".content").first().append ($foldMarker.clone());
-} // fold
-
-function toggleFold ($block) {
-var $content = $(".content", $block).first();
-var $marker = $content.next(".fold-marker");
-
-//debug (`${$marker.length} ${$content.length}`);
-
-$marker.toggleClass ("hidden");
-$content.toggleClass ("hidden");
-$block.parent().find(".fold-trigger").attr (
-"aria-expanded", $content.hasClass("hidden")? "false" : "true"
-);
-//$(".editor .content").val ($folded.html());
-return false;
-} // toggleFold
 } // displayTree
-
-
 
 
 $(".editor > .edit").on ("click", function (e) {
@@ -194,7 +158,10 @@ $(this).attr ("aria-pressed", "true");
 } // if
 
 }).on ("keypress", "button,a", function (e) {
+if (e.keyCode == 13 || e.keyCode == 32) {
 $(e.target).trigger ("click");
+} // if
+return true;
 }); // click .edit
 
 function enableEditor ($editor) {
@@ -205,6 +172,10 @@ $(".content", $editor).removeAttr ("readonly")
 function disableEditor ($editor) {
 $(".content", $editor).attr ("readonly", "true");
 } // disableEditor
+
+function program () {
+return $("#codeTree").find (".block").first();
+} // program
 
 function status (message) {
 $("#status").html ("");

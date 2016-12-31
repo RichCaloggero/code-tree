@@ -103,18 +103,19 @@ return true;
 return $container;
 
 function interactionHandler (e) {
-var action = (e.type === "keydown")? (e.which || e.keyCode) : "click";
+var action = String((e.type === "keydown")? (e.which || e.keyCode) : "click");
 var $newNode = null;
 var $currentNode = getCurrentNode();
 var actions = {
 //click: "click",
-13: "click", 32: "click",
-
 "38": "previous", "40": "next",
 "37": "up", "39": "down"
 };
 
-if (! (action in actions)) return true;
+if (! (action in actions)) {
+//console.log ("key " + action + " not handled by treeWalker");
+return true;
+} // if
 
 //debug ("action: ", action);
 $newNode = navigate ($currentNode, actions[String(action)]);
