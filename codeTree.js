@@ -14,7 +14,6 @@ displayTree ( $("#codeTree") );
 }); // get
 
 $(".editor").on ("change", ".content", function () {
-alert ("changing...");
 displayTree ( $("#codeTree") );
 }); // update on change
 
@@ -89,12 +88,11 @@ return $("#codeTree").find ("#treeWalker-activeDescendant");
 function displayTree ($codeTree) {
 var parseTree, html;
 var text = $(".editor .content").val ();
-alert (text);
 status("Loading...");
 try {
 html = wrap(text, {strictMode: false});
 } catch (e) {
-status(e.stack);
+status(e.message + "\n" + e.stack);
 return;
 } // catch
 

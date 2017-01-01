@@ -10,14 +10,22 @@ var parser = new cst.Parser (parserOptions);
 var a = parser.parse(code);
 var html = "";
 
-a._traverse._tokenIndex._index.CommentBlock.forEach (function (commentNode) {
+var comments = a._traverse._tokenIndex._index.CommentBlock;
+if (comments) comments.forEach (function (commentNode) {
 wrapStatement (commentNode, commentNode.parentElement, commentNode);
 });
+
+/*comments = a._traverse._tokenIndex._index.CommentLine;
+if (comments) comments.forEach (function (commentNode) {
+var node = commentNode.previous;
+while (node && node.type === "Whitespace" && node.value !== "\n") node = node.previous;
+if (!node || (node.isToken && node.value === "\n")) wrapStatement (commentNode, commentNode.parentElement, commentNode);
+});
+*/
 
 tr.traverse (a, {
 enter: function (node, parent) {
 var next = includeNextCommentLine (node);
-
 
 //console.log ("enter node ", (node)? node.type : "null");
 //try {
@@ -32,12 +40,13 @@ wrapStatement (node, parent, next);
 } // if
 
 //} catch (e) {} // catch
-
-
 }, // enter
 
 keys: {
 BooleanLiteral: [],
+StringLiteral: [],
+ObjectProperty: [],
+RegExpLiteral: [],
 CommentBlock: [],
 CommentLine: []
 }, // keys
@@ -54,9 +63,8 @@ return Object.keys(node);
 }); // traverse
 
 
-
 function wrapStatement (node, parent, next) {
-console.log ("statement: ", node.type, "next: ", (next.type), "parent: ", parent.type);
+//console.log ("statement: ", node.type, "next: ", (next.type), "parent: ", parent.type);
 parent.insertChildBefore(comment("{{"), node);
 parent.insertChildBefore(comment("{{{"), node);
 
@@ -108,7 +116,7 @@ html = html.replace (/\/\*\}\*\//g, '</div><!-- .block -->');
 return '<div class="program block">\n' + html + '\n</div><!-- .Program -->\n';
 } // wrap
 
-console.log (wrap("/* start */\nwhile (true) {\n/* foo */;\n}"));
+//console.log (wrap("// start\n"));
 
 /*let fs = require ("fs");
 let code = fs.readFileSync ("t.txt", "utf-8");
