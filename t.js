@@ -3,16 +3,17 @@
 var cst = require ("../cst-0.4.9/lib/index");
 var parser = new cst.Parser ();
 var esprima = require ("esprima");
-var tr = require ("estraverse");
+var tr = cst.traverse();
 var util = require ("util");
 
 var code = `
-while (x) {
-f();
-}
+/* block comment */
+var x; // line comment
 `;
 
 var a = parser.parse(code);
+console.log (a.getSourceCode());
+process.exit(0);
 
 var html = "";
 
