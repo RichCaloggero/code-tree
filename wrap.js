@@ -15,13 +15,19 @@ if (comments) comments.forEach (function (commentNode) {
 wrapStatement (commentNode, commentNode.parentElement, commentNode);
 });
 
-/*comments = a._traverse._tokenIndex._index.CommentLine;
+comments = a._traverse._tokenIndex._index.CommentLine;
 if (comments) comments.forEach (function (commentNode) {
-var node = commentNode.previous;
-while (node && node.type === "Whitespace" && node.value !== "\n") node = node.previous;
-if (!node || (node.isToken && node.value === "\n")) wrapStatement (commentNode, commentNode.parentElement, commentNode);
-});
-*/
+var node = commentNode.previousSibling;
+while (node && node.type === "Whitespace" && !isNewline(node.value)) {
+//console.log (node? [node.type, node.value] : "null");
+node = node.previousSibling;
+} // while
+//console.log ("stop: ", node? [node.type, node.value] : "null");
+if (!node || (node.type === "Whitespace" && isNewline(node.value))) {
+wrapStatement (commentNode, commentNode.parentElement, commentNode);
+//console.log ("wrapping ", commentNode.type, commentNode.value);
+} // if
+}); // forEach CommentLine
 
 tr.traverse (a, {
 enter: function (node, parent) {
@@ -37,16 +43,18 @@ node.insertChildBefore(comment("}"), node.lastChild);
 
 } else if (parent && (node.isStatement )) {
 wrapStatement (node, parent, next);
+if (node.body && node.body.type !== "BlockStatement") this.skip();
 } // if
 
 //} catch (e) {} // catch
 }, // enter
 
 keys: {
+NumericLiteral: [],
 BooleanLiteral: [],
 StringLiteral: [],
-ObjectProperty: [],
 RegExpLiteral: [],
+ObjectProperty: [],
 CommentBlock: [],
 CommentLine: []
 }, // keys
@@ -64,7 +72,7 @@ return Object.keys(node);
 
 
 function wrapStatement (node, parent, next) {
-//console.log ("statement: ", node.type, "next: ", (next.type), "parent: ", parent.type);
+console.log ("statement: ", node.type, "next: ", (next.type), "parent: ", parent.type);
 parent.insertChildBefore(comment("{{"), node);
 parent.insertChildBefore(comment("{{{"), node);
 
@@ -80,6 +88,7 @@ node.insertChildBefore(comment("}}}"), node.body);
 parent.insertChildBefore(comment("}}}"), next.nextSibling);
 } // if
 
+
 //parent.childElements.map(function (e,i) {
 //console.log (i, e.type, e.isToken?  e.value : "");
 //});
@@ -87,17 +96,14 @@ parent.insertChildBefore(comment("}}}"), next.nextSibling);
 } // wrapStatement
 
 function includeNextCommentLine (node) {
-var _node = node;
-if (! node || _node.type === "CommentBlock") return node;
-do {
-_node = _node.nextSibling;
-if (! _node) return node;
-if (_node.type === "CommentLine") return _node;
-} while (_node.type === "Whitespace");
+var _node = node.nextSibling;
+while (_node && _node.type === "Whitespace" && !isNewline(_node.value)) _node = _node.nextSibling;
+if (_node && _node.type === "CommentLine") return _node;
 return node;
 } // includeNextCommentLine
 
 function comment (value) {return new cst.Token ("CommentBlock", value);}
+function isNewline (s) {return s && s.charAt(0) === "\n";}
 
 html = a.getSourceCode ();
 
@@ -116,9 +122,14 @@ html = html.replace (/\/\*\}\*\//g, '</div><!-- .block -->');
 return '<div class="program block">\n' + html + '\n</div><!-- .Program -->\n';
 } // wrap
 
-//console.log (wrap("// start\n"));
+/*console.log (wrap(`
+while (true) foo();
+bar();
+`));
+*/
 
 /*let fs = require ("fs");
-let code = fs.readFileSync ("t.txt", "utf-8");
-console.log (wrap (code));
+let code = fs.readFileSync ("wrap.js", "utf-8");
+let html = wrap (code);
+//console.log (html);
 */
