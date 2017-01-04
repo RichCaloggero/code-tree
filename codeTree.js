@@ -14,7 +14,7 @@ displayTree ( $("#codeTree") );
 }); // get
 
 $(".editor").on ("change", ".content", function () {
-displayTree ( $("#codeTree") );
+displayTree ( $("#codeTree"), $(".editor .raw").prop ("checked"));
 }); // update on change
 
 
@@ -85,16 +85,20 @@ function currentNode () {
 return $("#codeTree").find ("#treeWalker-activeDescendant");
 } // currentNode
 
-function displayTree ($codeTree) {
+function displayTree ($codeTree, raw) {
 var parseTree, html;
 var text = $(".editor .content").val ();
 status("Loading...");
+if (! raw) {
 try {
 html = wrap(text, {strictMode: false});
 } catch (e) {
 status(e.message + "\n" + e.stack);
 return;
 } // catch
+} else {
+html = text;
+} // if
 
 $codeTree.html (html);
 program().attr("accesskey", "p");
