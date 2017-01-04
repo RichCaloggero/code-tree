@@ -1,66 +1,41 @@
 "use strict";
 
-var cst = require ("../cst-0.4.9/lib/index");
-var parser = new cst.Parser ();
-var esprima = require ("esprima");
-var tr = cst.traverse();
-var util = require ("util");
+var cst = require ("cst");
+var code = `if (t1) {
+true;
+} else if (t2) {
+false;
+} else {
+if (t3) {
+false;
+	}
+}`;
+var a = new cst.Parser().parse(code);
 
-var code = `
-/* block comment */
-var x; // line comment
+var if1 = a.firstChild;
+var if2 = if1.alternate;
+var if3 = if2.alternate.body[0];
+
+i(if1, if1.consequent.nextSibling);
+
+function q(node, stop=1, level=stop) {
+var result = "null";
+if (node) {
+result = `node: ${node.isToken? [node.type, node.value] : node.type}`; 
+if (level>0) result += `
+nextSibling: ${q(node.nextSibling, level-1)}
+lastToken: ${q(node.getLastToken(), level-1)}
 `;
-
-var a = parser.parse(code);
-console.log (a.getSourceCode());
-process.exit(0);
-
-var html = "";
-
-tr.traverse (a, {
-enter: function (node, parent) {
-var pre, post;
-//console.log (node.type, node.isStatement);
-//try {
-
-if (node.type === "BlockStatement" ) {
-parent.insertChildBefore(comment("}}}"), node);
-node.insertChildBefore(comment(`{${parent.type}`), node.firstChild.nextSibling);
-node.insertChildBefore(comment("}"), node.lastChild);
-//console.log (parent.type, node.type);
-
-} else if (node.isStatement  && parent) {
-//console.log ("statement: ", node.type, "parent: ", parent.type);
-parent.insertChildBefore(comment("{{"), node);
-parent.insertChildBefore(comment("{{{"), node);
-
-parent.insertChildBefore(comment("}}"),node.nextSibling);
-if (!node.body || node.body.type !== "BlockStatement") parent.insertChildBefore(comment("}}}"), node.nextSibling);
-
-//parent.childElements.map(function (e,i) {
-//console.log (i, e.type, e.isToken?  e.value : "");
-//});
 } // if
 
-//} catch (e) {} // catch
+if (level < stop) return result;
+console.log (result);
+} // q
 
-function comment (value) {return new cst.Token ("CommentBlock", value);}
 
-} // enter
-}); // traverse
+function i (where, before) {
+where.insertChildBefore (new cst.Token("CommentBlock","endif"), before);
+console.log(where.getSourceCode());
+} // i
 
-html = a.getSourceCode ();
-
-// statement content
-html = html.replace (/\/\*\{\{\{\*\//g, '<div class="content">');
-html = html.replace (/\/\*\}\}\}\*\//g, '</div><!-- .content -->');
-
-// statements
-html = html.replace (/\/\*\{\{\*\//g, '<div class="statement">');
-html = html.replace (/\/\*\}\}\*\//g, '</div><!-- .statement -->');
-
-// blocks
-html = html.replace (/\/\*\{(.*?)\*\//g, '<div class="block $1">');
-html = html.replace (/\/\*\}\*\//g, '</div><!-- .block -->');
-
-console.log (html);
+module.exports = {q, i, if1, if2, if3, cst, code, a};

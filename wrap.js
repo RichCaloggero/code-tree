@@ -1,5 +1,5 @@
 "use strict";
-var cst = require ("../cst-0.4.9/lib/index");
+var cst = require ("cst");
 var tr = require ("estraverse");
 
 exports.wrap = wrap;
