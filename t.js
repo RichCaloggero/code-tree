@@ -1,15 +1,10 @@
 "use strict";
 
 var cst = require ("cst");
-var code = `if (t1) {
-true;
-} else if (t2) {
-false;
-} else {
-if (t3) {
-false;
-	}
-}`;
+var code = `
+while (true) {true;}
+if (t1) true; else false;
+`;
 var a = new cst.Parser().parse(code);
 
 var if1 = a.firstChild;

@@ -90,27 +90,39 @@ node.insertChildBefore(annotation(`{${parent.type}`), node.firstChild.nextSiblin
 function endBlock (node, parent) {
 // insert end block marker before close brace
 node.insertChildBefore(annotation("}"), node.lastChild);
+append (annotation("}}"), node);
 } // endBlock
 
 function startStatement (node, parent) {
 //console.log ("startStatement: token=");
 //showToken (node.getFirstToken());
 //console.log ("start statement: ", node.type, " parent: ", parent.type);
+
+// all statements accept direct children get starting statement and starting content annotations 
 if (isInsideBlock(node) || isTopLevel(node)) parent.insertChildBefore (annotation("{{", "{{{"), node);
 
+// if statement template
 if (isIfStatement(node)) {
 console.log ("isIfStatement: ", node.type);
 if (isBlock(node.consequent)) node.insertChildBefore (annotation("}}}"), node.consequent);
 
 if (node.alternate) {
-// split into two statements
+// split into two statements if either alternate or consequent is a block
+if (isBlock(node.consequent) || isBlock(node.alternate)) {
 node.insertChildBefore (annotation("}}", "{{", "{{{"), node.alternate);
+node.alternate.insertChildBefore (annotation("}}}"), node.alternate.body[0]);
+} // if alternate is block
 } // if
 
+if (!isBlock(node.consequent) && !isBlock(node.alternate)) append (annotation ("}}}", "}}"), node);
+
 } else if (hasBlockContent(node)) {
+// other statements aside from if statements
 console.log ("hasBlockContent: ", node.type);
 node.insertChildBefore (annotation("}}}"), node.body);
-parent.insertChildBefore (annotation("}}"), node.nextSibling);
+
+} else {
+if (isInsideBlock(node) || isTopLevel(node)) append (annotation("}}}", "}}"), node);
 } // if
 } // startStatement
 
@@ -118,28 +130,41 @@ function endStatement (node, parent, bindComment) {
 var next;
 next = (bindComment)? includeNextCommentLine (node) : node;
 
-//console.log ("endStatement: ", node.type, parent.type);
-//console.log ("- ", node.getSourceCode());
-//showToken (node.getLastToken());
-if (isInsideBlock(node) ) {
-//console.log ("- nextSibling: ", node.nextSibling && node.nextSibling.type);
-//console.log ("- next: ", next && next.type);
-if (next.nextSibling && next.nextSibling.type !== "EOF") {
-console.log ("- insertChildBefore...");
-parent.insertChildBefore(annotation("}}}", "}}"),next.nextSibling);
-} else {
-console.log ("- appendChild");
-//else next.parent.appendChild(annotation("}}"));
-} // if
-} // if
-
-if (isTopLevel(node) && node.nextSibling === null) parent.insertChildBefore(annotation("}}}", "}}"), parent.getLastToken());
-
-
-//parent.childElements.map(function (e,i) {
-//console.log (i, e.type, e.isToken?  e.value : "");
-//});
 } // endStatement
+
+function append (_annotation, node) {
+var parent;
+if (! node) return;
+
+do {
+parent = node.parentElement;
+console.log (`append: node = ${query(node)}
+parent = ${query(node.parentElement)}
+next = ${query(node.nextSibling)}
+`);
+
+if (node.nextSibling) {
+parent.insertChildBefore (_annotation, node.nextSibling);
+console.log ("- before nextSibling");
+return;
+} // if
+
+if (isTopLevel(node)) {
+parent.insertChildBefore (_annotation, parent.getLastToken());
+return;
+} // if
+
+console.log ("- moovin on up...");
+node = parent;
+} while (node);
+
+console.log ("- append failed");
+} // append
+
+function query (node) {
+if (! node) return("null");
+else return((node.isToken)? [node.type, node.value] : node.type);
+} // query
 
 function hasBlockContent (node) {
 return node && (isBlock(node.body) || isBlock(node.consequent) || isBlock(node.alternate));
@@ -216,7 +241,7 @@ return '<div class="program block">\n' + html + '\n</div><!-- .Program -->\n';
 
 console.log (wrap(`
 while (true) {true;}
-wrap();
+if (t1) true; else false;
 `));
 
 /*let fs = require ("fs");
