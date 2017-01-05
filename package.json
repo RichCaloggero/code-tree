@@ -27,6 +27,7 @@
     "estemplate": "^0.5.1"
   },
   "devDependencies": {
+    "cst": "^0.4.9",
     "watchify": "^3.8.0"
   }
 }

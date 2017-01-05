@@ -109,8 +109,12 @@ if (isBlock(node.consequent)) node.insertChildBefore (annotation("}}}"), node.co
 if (node.alternate) {
 // split into two statements if either alternate or consequent is a block
 if (isBlock(node.consequent) || isBlock(node.alternate)) {
-node.insertChildBefore (annotation("}}", "{{", "{{{"), node.alternate);
-node.alternate.insertChildBefore (annotation("}}}"), node.alternate.body[0]);
+let _else = skipWhitespace(node.alternate.previousSibling, "previousSibling");
+console.log("- _else: ", query(_else));
+
+if (!isBlock(node.consequent)) node.insertChildBefore(annotation("}}"), _else);
+node.insertChildBefore (annotation("{{", "{{{"), _else);
+if (isBlock(node.alternate)) node.insertChildBefore (annotation("}}}"), node.alternate);
 } // if alternate is block
 } // if
 
@@ -239,10 +243,10 @@ html = html.replace (/\/\*\}\*\//g, '</div><!-- .block -->');
 return '<div class="program block">\n' + html + '\n</div><!-- .Program -->\n';
 } // wrap
 
-console.log (wrap(`
-while (true) {true;}
-if (t1) true; else false;
+/*console.log (wrap(`
+if (t1) {true;} else {false;}
 `));
+*/
 
 /*let fs = require ("fs");
 let code = fs.readFileSync ("wrap.js", "utf-8");
