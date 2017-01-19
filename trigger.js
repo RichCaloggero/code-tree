@@ -33,14 +33,23 @@ tr.traverse (a, {
 enter: function (node, parent) {
 //console.log ("enter node ", (node)? node.type : "null");
 
-if (isBlock(node) && parent) {
+if (parent) {
+
+if (isBlock(node)) {
 startBlock (node, parent);
+} else if (isStatement(node)) {
+startStatement (node, parent);
+} // if
 } // if
 }, // enter
 
 leave: function (node, parent) {
+if (parent) {
 if (isBlock(node) && parent) {
 endBlock (node, parent);
+} else if (isStatement(node)) {
+endStatement (node, parent);
+} // if
 } // if
 }, // leave
 
@@ -73,19 +82,62 @@ endStatement (node, parent);
 
 function startBlock (node, parent) {
 var start;
-console.log ("BlockStatement ", node.getSourceCode());
+//console.log ("BlockStatement ", node.getSourceCode());
 // insert start block marker after open brace
 node.insertChildBefore(annotation(`{${parent.type}`), node.firstChild.nextSibling);
-
-// trigger will be content of parent node, until open brace
-parent.parentElement.insertChildBefore (annotation("{{"), parent);
-parent.insertChildBefore (annotation("}}"), node);
 } // startBlock
 
 function endBlock (node, parent) {
 // insert end block marker before close brace
 node.insertChildBefore(annotation("}"), node.lastChild);
 } // endBlock
+
+function startStatement (node, parent) {
+var _else;
+
+if (hasBlockContent (node)) {
+console.log ("startStatement hasBlockContent ", node.type);
+
+if (isConditional(node)) {
+if (isBlock(node.consequent)) {
+if (! isInsideElseClause(node)) parent.insertChildBefore (annotation("{{"), node);
+node.insertChildBefore (annotation("}}"), node.consequent);
+} // if
+
+if (isBlock(node.alternate) || (isConditional(node.alternate) && hasBlockContent(node.alternate))) {
+_else = find(node, "Keyword", "else")[0];
+//console.log (showToken(_else));
+if (! _else) throw new Error ("expected else keyword");
+
+node.insertChildBefore (annotation("{{"), _else);
+if (isBlock(node.alternate)) node.insertChildBefore (annotation("}}"), node.alternate);
+} // if
+
+} else {
+if (!isInsideElseClause(node)) {
+console.log ("- insideElseClause ", node.type);
+node.insertChildBefore (annotation("{{"), node.firstChild);
+node.insertChildBefore (annotation("}}"), node.body);
+} // if
+} // if
+
+} // if
+} // startStatement
+
+function endStatement (node, parent) {
+
+} // endStatement
+
+function find (node, type, value) {
+var isNode = not(value);
+return node.childElements.filter(function (element) {
+if (isNode) {
+return element.type === type;
+} else {
+return element.type && element.type === type && element.value && element.value === value
+} // if
+}); // return
+} // find
 
 function append (_annotation, node) {
 var parent;
@@ -116,27 +168,22 @@ node = parent;
 console.log ("- append failed");
 } // append
 
-function query (node) {
-if (! node) return("null");
-else return((node.isToken)? [node.type, node.value] : node.type);
-} // query
+function not(x) {return !x;}
+function isTopLevel (node) {return node && node.parentElement && node.parentElement.type === "Program";}
+function isBlock (node) {return node && node.type === "BlockStatement";}
+function isConditional (node) {return node && node.type === "IfStatement";}
+function isStatement (node) {return node && node.isStatement;}
+function isInsideBlock (node) {return node && node.parentElement && node.parentElement.type === "BlockStatement";}
+function isNewline (s) {return s && s.charAt(0) === "\n";}
 
 function hasBlockContent (node) {
 return node && (isBlock(node.body) || isBlock(node.consequent) || isBlock(node.alternate));
 } // hasBlockContent
 
-function isBlock (node) {return node && node.type === "BlockStatement";}
-
-function isInsideBlock (node) {return node && node.parentElement && node.parentElement.type === "BlockStatement";}
-function isInsideElseClause (node, parent) {
-return (
-(node.type === "BlockStatement")?
-parent && parent.type === "IfStatement" && parent.alternate === node
-: parent.parentElement && parent.parentElement.type === "IfStatement" && parent.parentElement.alternate === parent
-); // return
+function isInsideElseClause (node) {
+return node && isConditional (node.parentElement) && node.parentElement.alternate === node;
 } // insideElseClause
 
-function isTopLevel (node) {return node && node.parentElement && node.parentElement.type === "Program";}
 
 function skipWhitespace (node, next, breakOn) {
 while (node && node.type === "Whitespace") {
@@ -146,6 +193,11 @@ node = node[next];
 
 return node;
 } // skipWhitespace
+
+function query (node) {
+if (! node) return("null");
+else return((node.isToken)? [node.type, node.value] : node.type);
+} // query
 
 function showToken (t) {console.log ((t)? [t.type, t.value] : "null");} // showToken
 
@@ -173,9 +225,7 @@ new cst.Token ("Whitespace", "\n")
 ]; // return
 } // comment
 
-function isIfStatement (node) {return node && node.type === "IfStatement";}
 
-function isNewline (s) {return s && s.charAt(0) === "\n";}
 
 return toHtml (a.getSourceCode());
 
@@ -198,7 +248,13 @@ return '<div class="program block">\n' + html + '\n</div><!-- .Program -->\n';
 } // annotate
 
 console.log (annotate(`
-if (t1) {true;} else {false;}
+if (t1) {
+true;
+} else if (t2) {
+false;
+} else {
+false;
+} // if
 `));
 
 /*let fs = require ("fs");
