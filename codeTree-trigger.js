@@ -1,7 +1,8 @@
 "use strict";
-var wrap = require ("./wrap.js").wrap;
+var addTriggers = require ("./trigger.js").annotate;
+
 $(document).ready (function () {
-var $foldMarker = $('<span class="foldMarker">...</span>');
+var foldMarker = '<span class="foldMarker">...</span>';
 var $savedNode = null;
 
 jQuery.get ("t.txt", null, null, "text")
@@ -91,7 +92,7 @@ var text = $(".editor .content").val ();
 status("Loading...");
 if (! raw) {
 try {
-html = wrap(text, {strictMode: false});
+html = addTriggers (text, {strictMode: false});
 } catch (e) {
 status(e.message + "\n" + e.stack);
 return;
@@ -106,47 +107,23 @@ foldAll ($codeTree);
 status ("Done.");
 
 
-treeWalker ({
-$container: program(),
-name: "treeTest",
-flow: true,
-
-group: ".block", 
-branch: ".statement",
-
-open : function ($node) {
-//debug ("myOpen: " + $node[0].className);
-unfold ($node);
-}, // open
-
-close : function ($node) {
-//debug ("myClose: " + $node[0].className);
-fold ($node);
-}, // close
-}); // treeWalker
-
 
 function unfoldAll ($tree) {
-unfold ( $(".statement .fold-marker", $tree).parent().parent());
+unfold ($tree.find (".trigger"));
 } // unfoldAll
 
 function foldAll ($tree) {
-fold ($tree.find (".statement .block").parent());
+fold ($tree.find (".trigger"));
 } // foldAll
 
-function fold ($statement) {
-var $foldMarker = $statement.find ($foldMarker);
-
-$statement.find(".block:first").hide ();
-if ($foldMarker && $foldMarker.length > 0) $foldMarker.show ();
-else $statement.append ($foldMarker.clone());
+function fold ($trigger) {
+$trigger.attr ("aria-expanded", "false")
+.next(".block").after($(foldMarker));
 } // fold
 
-function unfold ($statement) {
-var $marker = $(".fold-marker", $statement).first();
-//debug ("unfolding: ", $statement.length, $marker.length, $marker.parent().text());
-$marker.hide();
-$statement.find (".block:first").show ();
+function unfold ($trigger) {
+$trigger.attr ("aria-expanded", "true")
+.next(".foldMarker").remove();
 } // unfold
 
 } // displayTree

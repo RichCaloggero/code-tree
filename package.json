@@ -12,9 +12,12 @@
     ]
   },
   "scripts": {
-  "watch": "watchify codeTree.js -o codeTree.bundle.js --source-maps",
-  "build": "browserify codeTree.js -o codeTree.bundle.js --source-maps"
-  },
+  "watch-wrap": "watchify codeTree-wrap.js -o codeTree.bundle.js --source-maps",
+  "watch-trigger": "watchify codeTree-trigger.js -o codeTree.bundle.js --source-maps",
+  "build-wrap": "browserify codeTree-wrap.js -o codeTree.bundle.js --source-maps",
+  "build-trigger": "browserify codeTree-trigger.js -o codeTree.bundle.js --source-maps"
+ 
+},
   "dependencies": {
     "babel-runtime": "^6.9.2",
     "babylon": "^6.8.1",

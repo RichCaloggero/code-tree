@@ -219,10 +219,12 @@ return result;
 } // annotation
 
 function comment (value) {
-return [
+var result = [
 new cst.Token ("CommentBlock", value),
-new cst.Token ("Whitespace", "\n")
-]; // return
+//new cst.Token ("Whitespace", "\n")
+];
+if (value === "}") result.push (new cst.Token ("Whitespace", "\n"));
+return result;
 } // comment
 
 
@@ -231,18 +233,18 @@ return toHtml (a.getSourceCode());
 
 function toHtml (code) {
 var html = code;
-/*// statement content
-html = html.replace (/\/\*\{\{\{\*\//g, '<div class="content">');
-html = html.replace (/\/\*\}\}\}\*\//g, '</div><!-- .content -->');
+// statement content
+//html = html.replace (/\/\*\{\{\{\*\//g, '<div class="content">');
+//html = html.replace (/\/\*\}\}\}\*\//g, '</div><!-- .content -->');
 
 // statements
-html = html.replace (/\/\*\{\{\*\//g, '<div class="statement">');
+html = html.replace (/\/\*\{\{\*\//g, '<div class="trigger" role="button" tabindex="0">');
 html = html.replace (/\/\*\}\}\*\//g, '</div><!-- .statement -->');
 
 // blocks
 html = html.replace (/\/\*\{(.*?)\*\//g, '<div class="block $1">');
 html = html.replace (/\/\*\}\*\//g, '</div><!-- .block -->');
-*/
+
 return '<div class="program block">\n' + html + '\n</div><!-- .Program -->\n';
 } // toHtml
 } // annotate

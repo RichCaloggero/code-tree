@@ -5,8 +5,11 @@
 <title>Test</title>
 
 <style>
-.statement, .block, .block.folded, .block.unfolded {display: inline;}
 #codeTree, #debug, .editor .content {white-space: pre;}
+#codeTree .trigger {white-space: normal;}
+
+.trigger, .block, .block.folded, .block.unfolded {display: inline-block;}
+#codeTree .trigger[aria-expanded=false] + .block {display: none;}
 </style>
 
 <script src="jquery.min.js"></script>
