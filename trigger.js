@@ -10,7 +10,7 @@ var parser = new cst.Parser (parserOptions);
 var a = parser.parse(code);
 var html = "";
 
-var comments = a._traverse._tokenIndex._index.CommentBlock;
+/*var comments = a._traverse._tokenIndex._index.CommentBlock;
 if (comments) comments.forEach (function (commentNode) {
 wrapStatement (commentNode);
 });
@@ -28,6 +28,7 @@ wrapStatement (commentNode);
 //console.log ("wrapping ", commentNode.type, commentNode.value);
 } // if
 }); // forEach CommentLine
+*/
 
 tr.traverse (a, {
 enter: function (node, parent) {
@@ -37,7 +38,7 @@ if (parent) {
 
 if (isBlock(node)) {
 startBlock (node, parent);
-} else if (isStatement(node)) {
+} else if (isStatement(node) || isFunctionExpression(node)) {
 startStatement (node, parent);
 } // if
 } // if
@@ -47,8 +48,6 @@ leave: function (node, parent) {
 if (parent) {
 if (isBlock(node) && parent) {
 endBlock (node, parent);
-} else if (isStatement(node)) {
-endStatement (node, parent);
 } // if
 } // if
 }, // leave
@@ -113,10 +112,11 @@ node.insertChildBefore (annotation("{{"), _else);
 if (isBlock(node.alternate)) node.insertChildBefore (annotation("}}"), node.alternate);
 } // if
 
+
 } else {
 if (!isInsideElseClause(node)) {
 console.log ("- insideElseClause ", node.type);
-node.insertChildBefore (annotation("{{"), node.firstChild);
+parent.insertChildBefore (annotation("{{"), node);
 node.insertChildBefore (annotation("}}"), node.body);
 } // if
 } // if
@@ -169,6 +169,7 @@ console.log ("- append failed");
 } // append
 
 function not(x) {return !x;}
+function isFunctionExpression (node) {return node && node.type === "FunctionExpression";}
 function isTopLevel (node) {return node && node.parentElement && node.parentElement.type === "Program";}
 function isBlock (node) {return node && node.type === "BlockStatement";}
 function isConditional (node) {return node && node.type === "IfStatement";}
@@ -250,14 +251,14 @@ return '<div class="program block">\n' + html + '\n</div><!-- .Program -->\n';
 } // annotate
 
 console.log (annotate(`
-if (t1) {
+/*if (t1) {
 true;
 } else if (t2) {
 false;
 } else {
 false;
 } // if
-`));
+*/`));
 
 /*let fs = require ("fs");
 let code = fs.readFileSync ("wrap.js", "utf-8");

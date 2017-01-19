@@ -42,13 +42,19 @@ return false;
 }); // click .controls
 
 $("#codeTree")
-.on ("click", ".statement", function (e) {
+.on ("click", ".trigger", function (e) {
 e.stopPropagation ();
 e.stopImmediatePropagation ();
 e.preventDefault ();
+toggleFold ($(e.target));
 return false;
 
 }); // click
+
+function toggleFold ($trigger) {
+if ($trigger.is ("[aria-expanded=true]")) fold ($trigger);
+else unfold ($trigger);
+} // toggleFold
 
 function cut ($from) {
 if (! $from) $from = currentNode();
@@ -106,7 +112,7 @@ program().attr("accesskey", "p");
 foldAll ($codeTree);
 status ("Done.");
 
-
+} // displayTree
 
 function unfoldAll ($tree) {
 unfold ($tree.find (".trigger"));
@@ -123,11 +129,8 @@ $trigger.attr ("aria-expanded", "false")
 
 function unfold ($trigger) {
 $trigger.attr ("aria-expanded", "true")
-.next(".foldMarker").remove();
+.nextAll(".foldMarker").first().remove();
 } // unfold
-
-} // displayTree
-
 
 $(".editor > .edit").on ("click", function (e) {
 var $edit = $(e.target);

@@ -1,3 +1,8 @@
+var t1, foo, bar, baz;
+while (t1) foo();
+while (t1) {bar();}
+
+if (t1) foo();
 if (t1) {
 foo();
 } else if (t2) {
