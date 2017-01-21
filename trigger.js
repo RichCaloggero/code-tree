@@ -35,6 +35,7 @@ endBlock (node, parent);
 }, // leave
 
 keys: {
+NullLiteral: [],
 NumericLiteral: [],
 BooleanLiteral: [],
 StringLiteral: [],

@@ -21,16 +21,16 @@ displayTree ( $("#codeTree"), $(".editor .raw").prop ("checked"));
 
 $("#controls")
 .on ("click", ".copy", function (e) {
-copy ();
+copy (e.target);
 program().focus();
 
 }).on ("click", ".cut", function (e) {
-cut ();
+cut (e.target);
 program().focus();
 return false;
 
 }).on ("click", ".paste", function (e) {
-paste ($savedNode, currentNode());
+paste ($savedNode, $(e.target));
 program().focus();
 return false;
 
@@ -62,20 +62,25 @@ status ("cut " + $from[0].className);
 return $from.remove();
 } // cut
 
-function copy () {
-status("copy...");
-return ($savedNode = currentNode());
+function copy (element) {
+return ($savedNode = $(element));
 } // copy
 
 function paste ($from, $to) {
+var $move;
 if (! $from || ! $to || $from.length === 0 || $to.length === 0) {
 status ("Paste not performed - null parameter given");
 return;
 } // if
 
 if ($from[0] === $to[0]) return;
-if ($to.prev(".statement")[0] === $from[0]) return;
-$to.before ($from);
+if ($to.prev(".block")[0] === $from[0]) return;
+
+$move = $from;
+$move.add ($from.next(".block"));
+if ($move.attr("aria-expanded") === "true") $move = $move.add ($from.nextAll(foldMarker).first());
+
+$to.before ($move);
 status ("paste " + $from[0].className + " before " + $to[0].className);
 } // paste
 
