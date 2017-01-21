@@ -4,33 +4,15 @@ var tr = require ("estraverse");
 
 exports.annotate = annotate;
 function annotate (code, parserOptions) {
-code = code.trim();
-if (! code) return "";
 var parser = new cst.Parser (parserOptions);
-var a = parser.parse(code);
+var ast = parser.parse(code);
 var html = "";
 
-/*var comments = a._traverse._tokenIndex._index.CommentBlock;
-if (comments) comments.forEach (function (commentNode) {
-wrapStatement (commentNode);
-});
+code = code.trim();
+if (! code) return "";
 
-comments = a._traverse._tokenIndex._index.CommentLine;
-if (comments) comments.forEach (function (commentNode) {
-var node = commentNode.previousSibling;
-while (node && node.type === "Whitespace" && !isNewline(node.value)) {
-//console.log (node? [node.type, node.value] : "null");
-node = node.previousSibling;
-} // while
-//console.log ("stop: ", node? [node.type, node.value] : "null");
-if (!node || (node.type === "Whitespace" && isNewline(node.value))) {
-wrapStatement (commentNode);
-//console.log ("wrapping ", commentNode.type, commentNode.value);
-} // if
-}); // forEach CommentLine
-*/
 
-tr.traverse (a, {
+tr.traverse (ast, {
 enter: function (node, parent) {
 //console.log ("enter node ", (node)? node.type : "null");
 
@@ -61,33 +43,14 @@ ObjectProperty: [],
 CommentBlock: [],
 CommentLine: []
 }, // keys
-
-/*fallback: function (node) {
-if (node.isNonCodeToken) {
-return [];
-} else {
-return Object.keys(node);
-} // if
-}, // fallback
-*/
-
 }); // traverse
 
-function wrapStatement (node) {
-var parent = node.parentElement;
-startStatement (node, parent);
-endStatement (node, parent);
-} // wrapStatement
 
 function startBlock (node, parent) {
-var start;
-//console.log ("BlockStatement ", node.getSourceCode());
-// insert start block marker after open brace
 node.insertChildBefore(annotation(`{${parent.type}`), node.firstChild.nextSibling);
 } // startBlock
 
 function endBlock (node, parent) {
-// insert end block marker before close brace
 node.insertChildBefore(annotation("}"), node.lastChild);
 } // endBlock
 
@@ -109,13 +72,13 @@ _else = find(node, "Keyword", "else")[0];
 if (! _else) throw new Error ("expected else keyword");
 
 node.insertChildBefore (annotation("{{"), _else);
-if (isBlock(node.alternate)) node.insertChildBefore (annotation("}}"), node.alternate);
+if (isBlock(node.alternate)) node.insertChildBefore (annotation("}"), node.alternate);
 } // if
 
 
 } else {
-if (!isInsideElseClause(node)) {
-console.log ("- insideElseClause ", node.type);
+if (not (isInsideElseClause(node))) {
+console.log ("wrapping ", node.type);
 parent.insertChildBefore (annotation("{{"), node);
 node.insertChildBefore (annotation("}}"), node.body);
 } // if
@@ -230,35 +193,37 @@ return result;
 
 
 
-return toHtml (a.getSourceCode());
+return toHtml (ast.getSourceCode());
 
 function toHtml (code) {
-var html = code;
+var html = escapeHtml (code);
 // statement content
 //html = html.replace (/\/\*\{\{\{\*\//g, '<div class="content">');
 //html = html.replace (/\/\*\}\}\}\*\//g, '</div><!-- .content -->');
 
-// statements
+// triggers
 html = html.replace (/\/\*\{\{\*\//g, '<div class="trigger" role="button" tabindex="0">');
-html = html.replace (/\/\*\}\}\*\//g, '</div><!-- .statement -->');
+html = html.replace (/\/\*\}\}\*\//g, '</div><!-- .trigger -->');
 
 // blocks
 html = html.replace (/\/\*\{(.*?)\*\//g, '<div class="block $1">');
 html = html.replace (/\/\*\}\*\//g, '</div><!-- .block -->');
 
 return '<div class="program block">\n' + html + '\n</div><!-- .Program -->\n';
+
+function escapeHtml (text) {
+	//debug ("escape:", text);
+	text = text.replace (/\&/g, "\&amp;");
+text = text.replace (/\</g, "\&lt;");
+text = text.replace (/\>/g, "\&gt;");
+
+//debug ("- returns:", text);
+return text;
+} // escapeHtml
+
 } // toHtml
 } // annotate
 
-console.log (annotate(`
-/*if (t1) {
-true;
-} else if (t2) {
-false;
-} else {
-false;
-} // if
-*/`));
 
 /*let fs = require ("fs");
 let code = fs.readFileSync ("wrap.js", "utf-8");

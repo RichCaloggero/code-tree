@@ -1,12 +1,30 @@
-var t1, foo, bar, baz;
-while (t1) foo();
-while (t1) {bar();}
+"use strict";
+var x, y;
 
-if (t1) foo();
-if (t1) {
-foo();
-} else if (t2) {
-bar();
-} else {
-baz();
-} // if
+exports.bar = bar;
+function bar () {
+var x;
+
+function annotation () {
+var result = [];
+var token;
+/*for (var i=0; i<arguments.length; i++) {
+token = comment(arguments[i]);
+result = result.concat(token);
+} // for
+*/
+return result;
+} // annotation
+
+return zoo();
+} // bar
+
+/*
+this is
+a block comment
+*/
+
+/*
+this is
+another block comment
+*/
